@@ -1,0 +1,20 @@
+<!-- Launch one camera -->
+<launch> 
+
+<arg name="cam_id" default="1" />
+
+<group ns="cam$(arg cam_id)" >
+	<!-- Openni Driver and RGBD processing -->
+	<include file="$(find ccny_openni_launch)/launch/openni_modified.launch">
+		<arg name="publish_cloud"  value="true" />
+		<arg name="device_id" value="$(arg cam_id)" />
+	</include>
+		    
+	<!-- Visual odometry and mapping -->
+	<include file="$(find ccny_rgbd)/launch/visual_odometry.launch">  
+		<arg name="cam_name" value="cam$(arg cam_id)" />     
+	</include>
+</group>
+
+
+</launch>

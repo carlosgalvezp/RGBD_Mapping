@@ -1,0 +1,14 @@
+<!-- Launch all the cameras -->
+<launch> 
+
+<!-- First camera -->
+<include file="$(find ccny_openni_launch)/launch/single_camera.launch">
+	<arg name="cam_id"  value="1" />
+</include>
+
+<!-- Second camera  -->
+<include file="$(find ccny_openni_launch)/launch/single_camera.launch">
+	<arg name="cam_id"  value="2" />
+</include>
+
+</launch>
