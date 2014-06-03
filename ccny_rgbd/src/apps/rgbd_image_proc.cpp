@@ -54,7 +54,7 @@ RGBDImageProc::RGBDImageProc(
   if (!nh_private_.getParam("cam_name",cam_name_)){
       std::cout<<"---------FAILED TO GET THE CAM NAME-----------\n";
   }
-  std::cout<<"THE CAMERA NAME IS: "<<cam_name_<<"\n";
+  std::cout<<"THE CAMERA NAME IS2: "<<cam_name_<<"\n";
 
   calib_extr_filename_ = calib_path_ + "/extr.yml";
   calib_warp_filename_ = calib_path_ + "/warp.yml";
