@@ -29,13 +29,9 @@ int main(int argc, char** argv)
   ros::NodeHandle nh;
   ros::NodeHandle nh_private("~");
 
-  ros::CallbackQueue cq;
-  nh.setCallbackQueue(&cq);
-
   ccny_rgbd::VisualOdometry vo(nh, nh_private);
   ros::MultiThreadedSpinner spinner(0);
-  spinner.spin(&cq);
-//  ros::spin();
 
+  ros::spin();
   return 0;
 }

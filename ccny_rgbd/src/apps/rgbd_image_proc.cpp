@@ -52,17 +52,14 @@ RGBDImageProc::RGBDImageProc(
   }
   // camera namespace
   if (!nh_private_.getParam("cam_name",cam_name_)){
-      std::cout<<"---------FAILED TO GET THE CAM NAME-----------\n";
+      ROS_WARN("[RGBD_IMAGE_PROC] Failed to retrieve cam name");
   }
-  std::cout<<"THE CAMERA NAME IS2: "<<cam_name_<<"\n";
 
   calib_extr_filename_ = calib_path_ + "/extr.yml";
   calib_warp_filename_ = calib_path_ + "/warp.yml";
   
   // load calibration (extrinsics, depth unwarp params) from files
-  std::cout<<"Loading calibration..."<<std::endl;
   loadCalibration();
-  std::cout<<"Loading calibration...OK"<<std::endl;
   if (unwarp_)
   {
     bool load_result = loadUnwarpCalibration();
@@ -86,60 +83,80 @@ RGBDImageProc::RGBDImageProc(
           "rgbd/cloud", queue_size_);
 
   // dynamic reconfigure
-//  ProcConfigServer::CallbackType f = boost::bind(&RGBDImageProc::reconfigCallback, this, _1, _2);
-//  config_server_.setCallback(f);
+  ProcConfigServer::CallbackType f = boost::bind(&RGBDImageProc::reconfigCallback, this, _1, _2);
+  config_server_.setCallback(f);
 
-  // subscribers
+//   subscribers
 //  sub_rgb_.subscribe  (rgb_image_transport_,
 //    "/camera/rgb/image_color", queue_size_);
 //  sub_depth_.subscribe(depth_image_transport_,
 //    "/camera/depth/image_raw", queue_size_); //16UC1
 
+  sub_rgb_.subscribe  (rgb_image_transport_,
+    "/"+cam_name_+"/camera/rgb/image", queue_size_);
+  sub_depth_.subscribe(depth_image_transport_,
+    "/"+cam_name_+"/camera/depth/image_raw", queue_size_); //16UC1
 
-
-//  queue_size_ = 100;
-//  sub_rgb_.subscribe  (rgb_image_transport_,
-//    "/"+cam_name_+"/camera/rgb/image", queue_size_);
-//  sub_depth_.subscribe(depth_image_transport_,
-//    "/"+cam_name_+"/camera/depth/image_raw", queue_size_); //16UC1
-
-//  sub_rgb_info_.subscribe  (nh_,
-//    "/"+cam_name_+"/camera/rgb/camera_info", queue_size_);
-//  sub_depth_info_.subscribe(nh_,
-//    "/"+cam_name_+"/camera/depth/camera_info", queue_size_);
+  sub_rgb_info_.subscribe  (nh_,
+    "/"+cam_name_+"/camera/rgb/camera_info", queue_size_);
+  sub_depth_info_.subscribe(nh_,
+    "/"+cam_name_+"/camera/depth/camera_info", queue_size_);
   
-//  sync_.reset(new RGBDSynchronizer4(
-//                RGBDSyncPolicy4(queue_size_), sub_rgb_, sub_depth_,
-//                sub_rgb_info_, sub_depth_info_));
+  sync_.reset(new RGBDSynchronizer4(
+                RGBDSyncPolicy4(queue_size_), sub_rgb_, sub_depth_,
+                sub_rgb_info_, sub_depth_info_));
   
-//  sync_->registerCallback(boost::bind(&RGBDImageProc::RGBDCallback, this, _1, _2, _3, _4));
+  sync_->registerCallback(boost::bind(&RGBDImageProc::RGBDCallback, this, _1, _2, _3, _4));
+//    frameCount = 0;
+//    sub_rgb_.subscribe  (rgb_image_transport_,
+//      "/camera1/rgb/image_raw", queue_size_);
+//    sub_depth_.subscribe(depth_image_transport_,
+//      "/camera2/rgb/image_raw", queue_size_);
 
-    sub_rgb_info_.subscribe  (nh_,
-      "/"+cam_name_+"/camera/rgb/camera_info", queue_size_);
-    sub_depth_info_.subscribe(nh_,
-      "/"+cam_name_+"/camera/depth/camera_info", queue_size_);
-
-   std::cout<<"SYNC: "<<sync_<<std::endl;
-   sync_.reset(new RGBDSynchronizer2(
-                   RGBDSyncPolicy2(queue_size_), sub_rgb_info_,sub_depth_info_));
-
-   std::cout<<"BEFORE BIND\n";
-   boost::bind(boost::bind(&RGBDImageProc::MyCallback, this, _1, _2));
-   std::cout<<"AFTER BIND\n";
-   sync_->registerCallback(boost::bind(&RGBDImageProc::MyCallback, this, _1, _2));
-
-// ros::Subscriber sub = nh_.subscribe("/"+cam_name_+"/camera/rgb/camera_info", queue_size_, &RGBDImageProc::MyCallback1,this);
+//   sync_.reset(new RGBDSynchronizer2(
+//                   RGBDSyncPolicy2(queue_size_), sub_rgb_,sub_depth_));
+//   sync_->registerCallback(boost::bind(&RGBDImageProc::MyCallback, this, _1, _2));
 }
 
-void RGBDImageProc::MyCallback(const CameraInfoMsg::ConstPtr& rgb_info_msg,
-                               const CameraInfoMsg::ConstPtr& depth_info_msg){
+void RGBDImageProc::MyCallback(const ImageMsg::ConstPtr& rgb1,
+                               const ImageMsg::ConstPtr& rgb2){
 
-    std::cout<<"MY CALLBACK 2....\n";
+    ROS_INFO("[RGBD_image_proc] Callback...");
+    std::cout<<"Time stamps:\n"<<"1): "<<rgb1->header.stamp<<"\n2): "<<rgb2->header.stamp<<"\n";
+    // Transform images to OpenCV format
+    cv_bridge::CvImageConstPtr rgb1_ptr   = cv_bridge::toCvShare(rgb1);
+    cv_bridge::CvImageConstPtr rgb2_ptr   = cv_bridge::toCvShare(rgb2);
+
+    const cv::Mat& rgb1_img   = rgb1_ptr->image;
+    const cv::Mat& rgb2_img = rgb2_ptr->image;
+
+    // Write into disk
+    std::string s0 = "/home/carlos/imgTR/";
+    std::stringstream ss1,ss2;
+    ss1<<s0<<"rgb1_"<<frameCount<<".jpg";
+    ss2<<s0<<"rgb2_"<<frameCount<<".jpg";
+    cv::imwrite(ss1.str(),rgb1_img);
+    cv::imwrite(ss2.str(),rgb2_img);
+    frameCount++;
 }
 
-void RGBDImageProc::MyCallback1(const CameraInfoMsg::ConstPtr& rgb_info_msg){
+void RGBDImageProc::GetRelativePoseCameras(){
+    ROS_INFO("Getting relative pose between cameras...");
+    // Read images from directory
+    cv::Mat img1 = cv::imread("/home/carlos/imgT/rgb1_3.jpg");
+    cv::Mat img2 = cv::imread("/home/carlos/imgT/rgb2_3.jpg");
+    std::cout<<"READ IMAGES: "<<img1.cols;
 
-    std::cout<<"MY CALLBACK 1....\n";
+    cv::imshow("IMG1",img1);
+    cv::imshow("IMG2",img2);
+    cv::waitKey();
+    // Find points to match
+
+    // Match points
+
+    // Run RANSAC to determine the pose
+
+
 }
 
 
@@ -270,7 +287,6 @@ void RGBDImageProc::RGBDCallback(
   const CameraInfoMsg::ConstPtr& depth_info_msg)
 {  
   std::cout<<"RGBD Callback...\n";
-  return;
   boost::mutex::scoped_lock(mutex_);
 
   // for profiling
@@ -306,9 +322,9 @@ void RGBDImageProc::RGBDCallback(
   // Convert BGR image to RGB for displaying purposes
   cv::cvtColor(rgb_img,rgb_img,CV_BGR2RGB);
   std::cout<<"Processing...\n";
-//  cv::imshow("RGB", rgb_img);
+  cv::imshow("RGB", rgb_img);
 //  cv::imshow("Depth", depth_img);
-//  cv::waitKey(1);
+  cv::waitKey(1);
   
   // **** rectify
   ros::WallTime start_rectify = ros::WallTime::now();

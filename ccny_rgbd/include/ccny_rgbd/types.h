@@ -96,7 +96,7 @@ typedef message_filters::Subscriber<CameraInfoMsg> CameraInfoSubFilter;
 
 typedef message_filters::sync_policies::ApproximateTime<ImageMsg, ImageMsg, CameraInfoMsg> RGBDSyncPolicy3;
 typedef message_filters::sync_policies::ApproximateTime<ImageMsg, ImageMsg, CameraInfoMsg, CameraInfoMsg> RGBDSyncPolicy4;
-typedef message_filters::sync_policies::ApproximateTime<CameraInfoMsg,CameraInfoMsg> RGBDSyncPolicy2;
+typedef message_filters::sync_policies::ApproximateTime<ImageMsg,ImageMsg> RGBDSyncPolicy2;
 
 typedef message_filters::Synchronizer<RGBDSyncPolicy2> RGBDSynchronizer2;
 typedef message_filters::Synchronizer<RGBDSyncPolicy3> RGBDSynchronizer3;

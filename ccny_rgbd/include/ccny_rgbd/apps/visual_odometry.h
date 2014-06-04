@@ -100,8 +100,7 @@ class VisualOdometry
     boost::shared_ptr<ImageTransport> depth_it_;
     
     /** @brief Callback syncronizer */
-//    boost::shared_ptr<RGBDSynchronizer3> sync_;
-    boost::shared_ptr<RGBDSynchronizer2> sync_;
+    boost::shared_ptr<RGBDSynchronizer3> sync_;
           
     /** @brief RGB message subscriber */
     ImageSubFilter      sub_rgb_;
@@ -110,9 +109,7 @@ class VisualOdometry
     ImageSubFilter      sub_depth_;  
    
     /** @brief Camera info message subscriber */
-//    CameraInfoSubFilter sub_info_;
-    CameraInfoSubFilter sub_rgb_info_;
-    CameraInfoSubFilter sub_depth_info_;
+    CameraInfoSubFilter sub_info_;
 
 
     // **** parameters 

@@ -19,7 +19,7 @@
   <!--<node pkg="nodelet" type="nodelet" name="openni_driver" 
         args="load openni_camera/driver $(arg manager_name)"
         output="screen">-->
-  <node pkg="nodelet" type="nodelet" name="driver_$(arg device_id)"
+  <node pkg="nodelet" type="nodelet" name="driver"
         args="load openni2_camera/OpenNI2DriverNodelet $(arg manager_name)"
         output="screen">
         

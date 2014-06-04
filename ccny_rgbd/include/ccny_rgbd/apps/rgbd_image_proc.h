@@ -82,14 +82,17 @@ class RGBDImageProc
                       const ImageMsg::ConstPtr& depth_msg,
                       const CameraInfoMsg::ConstPtr& rgb_info_msg,
                       const CameraInfoMsg::ConstPtr& depth_info_msg);
+    void MyCallback(const ImageMsg::ConstPtr& rgb1,
+                    const ImageMsg::ConstPtr& rgb2);
+
+    void GetRelativePoseCameras();
 
   private:
 
     ros::NodeHandle nh_;          ///< the public nodehandle
     ros::NodeHandle nh_private_;  ///< the private nodehandle
 
-    boost::shared_ptr<RGBDSynchronizer2> sync_; ///< ROS 4-topic synchronizer
-//    RGBDSynchronizer2* sync_; ///< ROS 4-topic synchronizer
+    boost::shared_ptr<RGBDSynchronizer4> sync_; ///< ROS 4-topic synchronizer
 
     ImageTransport rgb_image_transport_;    ///< ROS image transport for rgb message
     ImageTransport depth_image_transport_;  ///< ROS image transport for depth message
@@ -174,9 +177,9 @@ class RGBDImageProc
     /** @brief Depth rectification maps */
     cv::Mat map_depth_1_, map_depth_2_;
     
-    void MyCallback(const CameraInfoMsg::ConstPtr& rgb_info_msg,
-                    const CameraInfoMsg::ConstPtr& depth_info_msg);
-    void MyCallback1(const CameraInfoMsg::ConstPtr& rgb_info_msg);
+    //XXXXXXXXXXXXXXXXXXXx
+    int frameCount;
+    //XXXXXXXXXXXXXXXXXXXX
 
     /** @brief Initializes the rectification maps from CameraInfo 
      * messages

@@ -70,27 +70,14 @@ VisualOdometry::VisualOdometry(
   if (!nh_private_.getParam("cam_name",cam_name_)){
       ROS_WARN("[Visual Odometry] 'cam_name' param is not specified");
   }
-//  sub_rgb_.subscribe(rgb_it,     "/"+cam_name_+"/rgbd/rgb",   queue_size_);
-//  sub_depth_.subscribe(depth_it, "/"+cam_name_+"/rgbd/depth", queue_size_);
-//  sub_info_.subscribe(nh_,       "/"+cam_name_+"/rgbd/info",  queue_size_);
+  sub_rgb_.subscribe(rgb_it,     "/"+cam_name_+"/rgbd/rgb",   queue_size_);
+  sub_depth_.subscribe(depth_it, "/"+cam_name_+"/rgbd/depth", queue_size_);
+  sub_info_.subscribe(nh_,       "/"+cam_name_+"/rgbd/info",  queue_size_);
   
-  // Synchronize inputs.
-//  sync_.reset(new RGBDSynchronizer3(
-//                RGBDSyncPolicy3(queue_size_), sub_rgb_, sub_depth_, sub_info_));
+  sync_.reset(new RGBDSynchronizer3(
+                RGBDSyncPolicy3(queue_size_), sub_rgb_, sub_depth_, sub_info_));
   
-//  sync_->registerCallback(boost::bind(&VisualOdometry::RGBDCallback, this, _1, _2, _3));
-  sub_rgb_info_.subscribe  (nh_,
-    "/"+cam_name_+"/camera/rgb/camera_info", queue_size_);
-  sub_depth_info_.subscribe(nh_,
-    "/"+cam_name_+"/camera/depth/camera_info", queue_size_);
-
- sync_.reset(new RGBDSynchronizer2(
-                 RGBDSyncPolicy2(queue_size_), sub_rgb_info_,sub_depth_info_));
-
- std::cout<<"BEFORE BIND\n";
- boost::bind(boost::bind(&VisualOdometry::myCallBack, this, _1, _2));
- std::cout<<"AFTER BIND\n";
- sync_->registerCallback(boost::bind(&VisualOdometry::myCallBack, this, _1, _2));
+  sync_->registerCallback(boost::bind(&VisualOdometry::RGBDCallback, this, _1, _2, _3));
 }
 
 void VisualOdometry::myCallBack(const CameraInfoMsg::ConstPtr& rgb_info_msg,
