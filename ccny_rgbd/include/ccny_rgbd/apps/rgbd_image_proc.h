@@ -36,6 +36,13 @@
 #include "ccny_rgbd/util.h"
 #include "ccny_rgbd/RGBDImageProcConfig.h"
 
+#include "pcl/io/pcd_io.h"
+#include <pcl/io/ply_io.h>
+#include <pcl/point_types.h>
+#include <pcl/registration/icp.h>
+#include <pcl/visualization/pcl_visualizer.h>
+#include <iostream>
+
 namespace ccny_rgbd {
 
 /** @brief Processes the raw output of OpenNI sensors to create
@@ -82,12 +89,12 @@ class RGBDImageProc
                       const ImageMsg::ConstPtr& depth_msg,
                       const CameraInfoMsg::ConstPtr& rgb_info_msg,
                       const CameraInfoMsg::ConstPtr& depth_info_msg);
-    void MyCallback(const ImageMsg::ConstPtr& rgb1,
-                    const ImageMsg::ConstPtr& rgb2);
 
     void GetRelativePoseCameras();
 
   private:
+    // **** My params
+    std::string cam_name_; //Camera ID
 
     ros::NodeHandle nh_;          ///< the public nodehandle
     ros::NodeHandle nh_private_;  ///< the private nodehandle
@@ -119,7 +126,6 @@ class RGBDImageProc
     bool unwarp_;             ///< Whether to perform depth unwarping based on polynomial model
     bool publish_cloud_;      ///< Whether to calculate and publish the dense PointCloud
     
-    std::string cam_name_; //Camera ID
 
     /** @brief Downasampling scale (0, 1]. For example, 
      * 2.0 will result in an output image half the size of the input

@@ -52,7 +52,7 @@ RGBDImageProc::RGBDImageProc(
   }
   // camera namespace
   if (!nh_private_.getParam("cam_name",cam_name_)){
-      ROS_WARN("[RGBD_IMAGE_PROC] Failed to retrieve cam name");
+      ROS_WARN("[RGBD_IMAGE_PROC] Failed to retrieve camera namespace");
   }
 
   calib_extr_filename_ = calib_path_ + "/extr.yml";
@@ -86,12 +86,10 @@ RGBDImageProc::RGBDImageProc(
   ProcConfigServer::CallbackType f = boost::bind(&RGBDImageProc::reconfigCallback, this, _1, _2);
   config_server_.setCallback(f);
 
-//   subscribers
-//  sub_rgb_.subscribe  (rgb_image_transport_,
-//    "/camera/rgb/image_color", queue_size_);
-//  sub_depth_.subscribe(depth_image_transport_,
-//    "/camera/depth/image_raw", queue_size_); //16UC1
-
+  //******************
+//  GetRelativePoseCameras();
+//  return;
+//  //******************
   sub_rgb_.subscribe  (rgb_image_transport_,
     "/"+cam_name_+"/camera/rgb/image", queue_size_);
   sub_depth_.subscribe(depth_image_transport_,
@@ -107,56 +105,61 @@ RGBDImageProc::RGBDImageProc(
                 sub_rgb_info_, sub_depth_info_));
   
   sync_->registerCallback(boost::bind(&RGBDImageProc::RGBDCallback, this, _1, _2, _3, _4));
-//    frameCount = 0;
-//    sub_rgb_.subscribe  (rgb_image_transport_,
-//      "/camera1/rgb/image_raw", queue_size_);
-//    sub_depth_.subscribe(depth_image_transport_,
-//      "/camera2/rgb/image_raw", queue_size_);
-
-//   sync_.reset(new RGBDSynchronizer2(
-//                   RGBDSyncPolicy2(queue_size_), sub_rgb_,sub_depth_));
-//   sync_->registerCallback(boost::bind(&RGBDImageProc::MyCallback, this, _1, _2));
 }
 
-void RGBDImageProc::MyCallback(const ImageMsg::ConstPtr& rgb1,
-                               const ImageMsg::ConstPtr& rgb2){
-
-    ROS_INFO("[RGBD_image_proc] Callback...");
-    std::cout<<"Time stamps:\n"<<"1): "<<rgb1->header.stamp<<"\n2): "<<rgb2->header.stamp<<"\n";
-    // Transform images to OpenCV format
-    cv_bridge::CvImageConstPtr rgb1_ptr   = cv_bridge::toCvShare(rgb1);
-    cv_bridge::CvImageConstPtr rgb2_ptr   = cv_bridge::toCvShare(rgb2);
-
-    const cv::Mat& rgb1_img   = rgb1_ptr->image;
-    const cv::Mat& rgb2_img = rgb2_ptr->image;
-
-    // Write into disk
-    std::string s0 = "/home/carlos/imgTR/";
-    std::stringstream ss1,ss2;
-    ss1<<s0<<"rgb1_"<<frameCount<<".jpg";
-    ss2<<s0<<"rgb2_"<<frameCount<<".jpg";
-    cv::imwrite(ss1.str(),rgb1_img);
-    cv::imwrite(ss2.str(),rgb2_img);
-    frameCount++;
-}
 
 void RGBDImageProc::GetRelativePoseCameras(){
     ROS_INFO("Getting relative pose between cameras...");
-    // Read images from directory
-    cv::Mat img1 = cv::imread("/home/carlos/imgT/rgb1_3.jpg");
-    cv::Mat img2 = cv::imread("/home/carlos/imgT/rgb2_3.jpg");
-    std::cout<<"READ IMAGES: "<<img1.cols;
+    // Read pcd maps
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr map1 (new pcl::PointCloud<pcl::PointXYZRGB>);
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr map2 (new pcl::PointCloud<pcl::PointXYZRGB>);
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr ICP_map (new pcl::PointCloud<pcl::PointXYZRGB>);
 
-    cv::imshow("IMG1",img1);
-    cv::imshow("IMG2",img2);
-    cv::waitKey();
-    // Find points to match
+    if (pcl::io::loadPCDFile("/home/carlos/map1.pcd", *map1) == -1) //* load the file
+    {
+      PCL_ERROR ("Couldn't read file map1.pcd \n");
+    }
+    if (pcl::io::loadPCDFile("/home/carlos/map2.pcd", *map2) == -1) //* load the file
+    {
+      PCL_ERROR ("Couldn't read file map2.pcd \n");
+    }
+    ROS_INFO("Correctly read the two PCD files");
 
-    // Match points
+    //**** Remove NaN
+    std::vector<int> indices;
+    pcl::removeNaNFromPointCloud(*map1,*map1,indices);
+    pcl::removeNaNFromPointCloud(*map2,*map2,indices);
 
-    // Run RANSAC to determine the pose
+    //**** Perform registration using PCL libraries
+    int iterations = 50;
+    // The Iterative Closest Point algorithm
+    ROS_INFO("Performing ICP...");
+    pcl::IterativeClosestPoint<PointT, PointT> icp;
+    icp.setMaximumIterations(iterations);
+    icp.setInputSource(map2);
+    icp.setInputTarget(map1);
+    icp.align(*ICP_map);
+    ROS_INFO("Finished with ICP");
 
+    Eigen::Matrix4f matrix;
+    matrix = icp.getFinalTransformation();
+    std::cout<<"ICP SCORE: "<<icp.getFitnessScore();
+    ROS_INFO("Combining maps");
+   //**** Combine PCL maps once they are in the same coordinate frame
+    pcl::PointCloud<pcl::PointXYZRGB> finalMap= *map1 + *ICP_map;
 
+    //**** Save into file
+    ROS_INFO("Saving combined map");
+    pcl::io::savePCDFile ("/home/carlos/combinedMap.pcd",finalMap, true);
+    ROS_INFO("Done");
+
+    //**** Print transformation
+    printf ("Rotation matrix :\n");
+    printf ("    | %6.3f %6.3f %6.3f | \n", matrix (0,0), matrix (0,1), matrix (0,2));
+    printf ("R = | %6.3f %6.3f %6.3f | \n", matrix (1,0), matrix (1,1), matrix (1,2));
+    printf ("    | %6.3f %6.3f %6.3f | \n", matrix (2,0), matrix (2,1), matrix (2,2));
+    printf ("Translation vector :\n");
+    printf ("t = < %6.3f, %6.3f, %6.3f >\n\n", matrix (0,3), matrix (1,3), matrix (2,3));
 }
 
 
@@ -286,7 +289,6 @@ void RGBDImageProc::RGBDCallback(
   const CameraInfoMsg::ConstPtr& rgb_info_msg,
   const CameraInfoMsg::ConstPtr& depth_info_msg)
 {  
-  std::cout<<"RGBD Callback...\n";
   boost::mutex::scoped_lock(mutex_);
 
   // for profiling
@@ -321,7 +323,6 @@ void RGBDImageProc::RGBDCallback(
   
   // Convert BGR image to RGB for displaying purposes
   cv::cvtColor(rgb_img,rgb_img,CV_BGR2RGB);
-  std::cout<<"Processing...\n";
   cv::imshow("RGB", rgb_img);
 //  cv::imshow("Depth", depth_img);
   cv::waitKey(1);

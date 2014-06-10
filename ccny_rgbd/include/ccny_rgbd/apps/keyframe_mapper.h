@@ -200,6 +200,10 @@ class KeyframeMapper
 
   private:
 
+    // **** My params
+    std::string cam_name_;
+
+
     ros::Publisher keyframes_pub_;    ///< ROS publisher for the keyframe point clouds
     ros::Publisher poses_pub_;        ///< ROS publisher for the keyframe poses
     ros::Publisher kf_assoc_pub_;     ///< ROS publisher for the keyframe associations

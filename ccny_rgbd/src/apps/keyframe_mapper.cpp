@@ -73,9 +73,8 @@ KeyframeMapper::KeyframeMapper(
   // **** subscribers
 
   // camera namespace
-  std::string cam_name_;
   if (!nh_private_.getParam("cam_name",cam_name_)){
-      std::cout<<"---------FAILED TO GET THE CAM NAME-----------\n";
+      ROS_WARN("[Keyframe Mapper] Failed to retrieve camera namespace");
   }
 
   ImageTransport rgb_it(nh_);
@@ -678,18 +677,6 @@ bool KeyframeMapper::savePcdMap(const std::string& path)
   // write out
   pcl::PCDWriter writer;
   int result_pcd = writer.writeBinary<PointT>(path, pcd_map);  
-
-  //Write to file to read in Matlab
-  std::ofstream outfile;
-  outfile.open("/home/carlos/pcd.txt");
-  std::cout<<"------------WRITING TO FILE----------"<<std::endl;
-  for(unsigned int i=0; i < pcd_map.size(); i++){
-     PointT p = pcd_map[i];
-     Eigen::Vector3i rgb = p.getRGBVector3i();
-     outfile<<p.x<<" "<<p.y<<" "<<p.z<<" "<<rgb[0]<<" "<<rgb[1]<<" "<<rgb[2]<<"\n";
-  }
-  outfile.close();
-  std::cout<<"------------DONE WRITING TO FILE----------"<<std::endl;
 
   if (result_pcd < 0) return false;
   else return true;

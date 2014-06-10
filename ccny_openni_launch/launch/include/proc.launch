@@ -19,7 +19,7 @@
 
   <node pkg="nodelet" type="nodelet" name="rgbd_image_proc"
         args="load ccny_rgbd/RGBDImageProcNodelet $(arg manager_name)"
-        output="log">
+        output="screen">
     
     <!-- Resample by a factor of 2-->
     <param name="scale" value="$(arg scale)"/>
@@ -31,14 +31,14 @@
     <param name="cam_name" value="$(arg cam_name)"/>
   </node> 
 
-  <!-- static transforms -->
+  <!-- static transforms-->
   <arg name="pi/2" value="1.5707963267948966" />
   <arg name="optical_rotate" value="0 0 0 -$(arg pi/2) 0 -$(arg pi/2)" />
         
   <node pkg="tf" type="static_transform_publisher" name="camera_rgb_frame_tf"
-        args="0 -0.045 0 0 0 0  /camera_link /camera_rgb_frame 40" />        
+        args="0 -0.045 0 0 0 0  /$(arg cam_name)/camera_link /$(arg cam_name)/camera_rgb_frame 40" />        
 
   <node pkg="tf" type="static_transform_publisher" name="camera_rgb_optical_frame_tf"
-        args="$(arg optical_rotate) /camera_rgb_frame /camera_rgb_optical_frame 40" />  
+        args="$(arg optical_rotate) /$(arg cam_name)/camera_rgb_frame /$(arg cam_name)/camera_rgb_optical_frame 40" />  
 
 </launch>

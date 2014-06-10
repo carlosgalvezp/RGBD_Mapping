@@ -66,9 +66,8 @@ VisualOdometry::VisualOdometry(
   ImageTransport depth_it(nh_);
 
   // camera namespace
-  std::string cam_name_;
   if (!nh_private_.getParam("cam_name",cam_name_)){
-      ROS_WARN("[Visual Odometry] 'cam_name' param is not specified");
+      ROS_WARN("[Visual Odometry] Failed to retrieve camera namespace");
   }
   sub_rgb_.subscribe(rgb_it,     "/"+cam_name_+"/rgbd/rgb",   queue_size_);
   sub_depth_.subscribe(depth_it, "/"+cam_name_+"/rgbd/depth", queue_size_);
@@ -104,7 +103,7 @@ void VisualOdometry::initParams()
   if (!nh_private_.getParam ("fixed_frame", fixed_frame_))
     fixed_frame_ = "/odom";
   if (!nh_private_.getParam ("base_frame", base_frame_))
-    base_frame_ = "/camera_link";
+    base_frame_ = "/"+cam_name_+"/camera_link";
   if (!nh_private_.getParam ("queue_size", queue_size_))
     queue_size_ = 5;
 

@@ -67,6 +67,8 @@ class VisualOdometry
     virtual ~VisualOdometry();
 
   private:
+    // **** My params
+    std::string cam_name_;
 
     // **** ROS-related
 
