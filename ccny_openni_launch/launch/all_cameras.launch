@@ -11,4 +11,10 @@
 	<arg name="cam_id"  value="2" />
 </include>
 
+  <!-- static transforms-->        
+  <node pkg="tf" type="static_transform_publisher" name="cam1_map_cam1_odom_tf"
+        args="0 0 0 0 0 0  /world /cam1/odom 40" />        
+
+ <node pkg="tf" type="static_transform_publisher" name="cam2_map_cam2_odom_tf"
+        args="0.494 0.146 0.032 0.5744 0.0350 0.1093  /world /cam2/odom 40" />   
 </launch>

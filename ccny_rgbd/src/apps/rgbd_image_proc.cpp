@@ -111,57 +111,144 @@ RGBDImageProc::RGBDImageProc(
 void RGBDImageProc::GetRelativePoseCameras(){
     ROS_INFO("Getting relative pose between cameras...");
     // Read pcd maps
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr map1 (new pcl::PointCloud<pcl::PointXYZRGB>);
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr map2 (new pcl::PointCloud<pcl::PointXYZRGB>);
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr ICP_map (new pcl::PointCloud<pcl::PointXYZRGB>);
+    PointCloudT::Ptr map1 (new PointCloudT);
+    PointCloudT::Ptr map2 (new PointCloudT);
+    PointCloudT::Ptr ICP_map (new PointCloudT);
+    PointCloudT::Ptr combinedMap (new PointCloudT);
+    Eigen::Matrix4f matrix;
 
-    if (pcl::io::loadPCDFile("/home/carlos/map1.pcd", *map1) == -1) //* load the file
+    if (pcl::io::loadPCDFile("/home/robo/map1.pcd", *map1) == -1) //* load the file
     {
       PCL_ERROR ("Couldn't read file map1.pcd \n");
     }
-    if (pcl::io::loadPCDFile("/home/carlos/map2.pcd", *map2) == -1) //* load the file
+    if (pcl::io::loadPCDFile("/home/robo/map2.pcd", *map2) == -1) //* load the file
     {
       PCL_ERROR ("Couldn't read file map2.pcd \n");
     }
     ROS_INFO("Correctly read the two PCD files");
-
     //**** Remove NaN
     std::vector<int> indices;
     pcl::removeNaNFromPointCloud(*map1,*map1,indices);
     pcl::removeNaNFromPointCloud(*map2,*map2,indices);
 
-    //**** Perform registration using PCL libraries
-    int iterations = 50;
-    // The Iterative Closest Point algorithm
-    ROS_INFO("Performing ICP...");
-    pcl::IterativeClosestPoint<PointT, PointT> icp;
-    icp.setMaximumIterations(iterations);
-    icp.setInputSource(map2);
-    icp.setInputTarget(map1);
-    icp.align(*ICP_map);
-    ROS_INFO("Finished with ICP");
+//    ICPRegistration(map1,map2,combinedMap,&transform);
 
-    Eigen::Matrix4f matrix;
-    matrix = icp.getFinalTransformation();
-    std::cout<<"ICP SCORE: "<<icp.getFitnessScore();
+    // **** ICP Registration using the Non-Linear method
+    int N_ITERS = 100;
+    ROS_INFO("Starting ICP...");
+    pcl::IterativeClosestPointNonLinear<PointT, PointT> reg;
+    reg.setTransformationEpsilon (1e-4);
+    // Set the maximum distance between two correspondences (src<->tgt) to 10cm
+    // Note: adjust this based on the size of your datasets
+    reg.setMaxCorrespondenceDistance (10);
+    // Set the point representation
+    reg.setInputTarget (map1);
+
+    Eigen::Matrix4f Ti = Eigen::Matrix4f::Identity (), prev;
+    PointCloudT::Ptr reg_result = map2;
+    reg.setMaximumIterations (2);
+    for (int i = 0; i < N_ITERS; ++i)
+    {
+      PCL_INFO ("Iteration Nr. %d.\n", i);
+
+      reg.setInputSource (reg_result);
+      reg.align (*reg_result);
+
+          //accumulate transformation between each Iteration
+      Ti = reg.getFinalTransformation () * Ti;
+
+          //if the difference between this transformation and the previous one
+          //is smaller than the threshold, refine the process by reducing
+          //the maximal correspondence distance
+      if (fabs ((reg.getLastIncrementalTransformation () - prev).sum ()) < reg.getTransformationEpsilon ())
+        reg.setMaxCorrespondenceDistance (reg.getMaxCorrespondenceDistance ()/2);
+
+      prev = reg.getLastIncrementalTransformation ();
+      ROS_INFO("Current Max CorrespondenceDistance: %.5f",reg.getMaxCorrespondenceDistance());
+    }
+
+    matrix = Ti;
+    ICP_map = reg_result;
+//    // Align
+//    int N_ITERS = 50;
+//    ROS_INFO("Starting ICP...");
+//    pcl::IterativeClosestPointNonLinear<PointT, PointT> reg;
+//    reg.setTransformationEpsilon (1e-6);
+//    // Set the maximum distance between two correspondences (src<->tgt) to 10cm
+//    // Note: adjust this based on the size of your datasets
+//    reg.setMaxCorrespondenceDistance (10);
+//    // Set the point representation
+//    reg.setInputSource (map2);
+//    reg.setInputTarget (map1);
+
+//    reg.setMaximumIterations (50);
+
+//    reg.align (*ICP_map);
+//    ROS_INFO("Finished with ICP");
+
+//    Eigen::Matrix4f matrix;
+//    matrix = reg.getFinalTransformation();
+//    std::cout<<"ICP SCORE: "<<reg.getFitnessScore()<<"\n";
     ROS_INFO("Combining maps");
    //**** Combine PCL maps once they are in the same coordinate frame
     pcl::PointCloud<pcl::PointXYZRGB> finalMap= *map1 + *ICP_map;
 
     //**** Save into file
     ROS_INFO("Saving combined map");
-    pcl::io::savePCDFile ("/home/carlos/combinedMap.pcd",finalMap, true);
+    pcl::io::savePCDFile ("/home/robo/combinedMap.pcd",finalMap, true);
     ROS_INFO("Done");
 
     //**** Print transformation
     printf ("Rotation matrix :\n");
-    printf ("    | %6.3f %6.3f %6.3f | \n", matrix (0,0), matrix (0,1), matrix (0,2));
+    printf (" | %6.3f %6.3f %6.3f | \n", matrix (0,0), matrix (0,1), matrix (0,2));
     printf ("R = | %6.3f %6.3f %6.3f | \n", matrix (1,0), matrix (1,1), matrix (1,2));
-    printf ("    | %6.3f %6.3f %6.3f | \n", matrix (2,0), matrix (2,1), matrix (2,2));
+    printf (" | %6.3f %6.3f %6.3f | \n", matrix (2,0), matrix (2,1), matrix (2,2));
     printf ("Translation vector :\n");
     printf ("t = < %6.3f, %6.3f, %6.3f >\n\n", matrix (0,3), matrix (1,3), matrix (2,3));
+
 }
 
+//void RGBDImageProc::ICPRegistration(PointCloudT::Ptr& map1, PointCloudT::Ptr& map2, PointCloudT::Ptr *combinedMap, Eigen::Matrix4f *transform)
+//{
+//    PointCloudT::Ptr ICP_map (new PointCloudT);
+
+//    //**** Remove NaN
+//    std::vector<int> indices;
+//    pcl::removeNaNFromPointCloud(*map1,*map1,indices);
+//    pcl::removeNaNFromPointCloud(*map2,*map2,indices);
+
+//    //**** Perform registration using PCL libraries
+//    int iterations = 50;
+//    // The Iterative Closest Point algorithm
+//    ROS_INFO("Performing ICP...");
+//    pcl::IterativeClosestPoint<PointT, PointT> icp;
+//    icp.setMaximumIterations(iterations);
+//    icp.setInputSource(map2);
+//    icp.setInputTarget(map1);
+//    icp.align(*ICP_map);
+//    *transform = icp.getFinalTransformation();
+//    std::cout<<"ICP SCORE: "<<icp.getFitnessScore();
+//    ROS_INFO("Finished with ICP");
+
+
+//    ROS_INFO("Combining maps");
+//   //**** Combine PCL maps once they are in the same coordinate frame
+//    *combinedMap = *map1 + *ICP_map;
+
+//    //**** Save into file
+//    ROS_INFO("Saving combined map");
+//    pcl::io::savePCDFile ("/home/robo/combinedMap.pcd",combinedMap, true);
+//    ROS_INFO("Done");
+
+
+//    //**** Print transformation
+//    printf ("Rotation matrix :\n");
+//    printf ("    | %6.3f %6.3f %6.3f | \n", transform (0,0), transform (0,1), transform (0,2));
+//    printf ("R = | %6.3f %6.3f %6.3f | \n", transform (1,0), transform (1,1), transform (1,2));
+//    printf ("    | %6.3f %6.3f %6.3f | \n", transform (2,0), transform (2,1), transform (2,2));
+//    printf ("Translation vector :\n");
+//    printf ("t = < %6.3f, %6.3f, %6.3f >\n\n", transform (0,3), transform (1,3), transform (2,3));
+//}
 
 RGBDImageProc::~RGBDImageProc()
 {

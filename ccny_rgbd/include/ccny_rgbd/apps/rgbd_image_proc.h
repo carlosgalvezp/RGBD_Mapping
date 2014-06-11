@@ -40,6 +40,8 @@
 #include <pcl/io/ply_io.h>
 #include <pcl/point_types.h>
 #include <pcl/registration/icp.h>
+#include <pcl/registration/icp_nl.h>
+
 #include <pcl/visualization/pcl_visualizer.h>
 #include <iostream>
 
@@ -91,6 +93,7 @@ class RGBDImageProc
                       const CameraInfoMsg::ConstPtr& depth_info_msg);
 
     void GetRelativePoseCameras();
+//    void ICPRegistration(pcl::PointCloud::Ptr &map1, pcl::PointCloud::Ptr &map2, pcl::PointCloud::Ptr *combinedMap, Eigen::Matrix4f *transform);
 
   private:
     // **** My params

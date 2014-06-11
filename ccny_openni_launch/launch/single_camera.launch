@@ -18,6 +18,7 @@
 	<include file="$(find ccny_rgbd)/launch/vo+mapping.launch">  
 		<arg name="cam_name" value="cam$(arg cam_id)" />     
 	</include> 
+
 </group>
       
 
