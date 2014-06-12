@@ -12,6 +12,7 @@
   <arg name="depth_mode" default="2"/>
 
   <arg name="device_id"/>
+  <arg name="calibrate"/>
   # modes: 
   #             2 (640x480 VGA 30Hz)
   #             5 (320x240 QVGA 30Hz)
@@ -39,7 +40,8 @@
      <arg name="scale"        value="$(arg scale)" />
      <arg name="publish_cloud" value="$(arg publish_cloud)" />  
      <arg name="verbose"       value="$(arg verbose)"/>  
-     <arg name="cam_name" value="cam$(arg device_id)"/>
+     <arg name="cam_name" value="cam$(arg device_id)"/> 
+     <arg name="calibrate" value="$(arg calibrate)"/>
   </include>
 
 

@@ -87,8 +87,12 @@ RGBDImageProc::RGBDImageProc(
   config_server_.setCallback(f);
 
   //******************
-//  GetRelativePoseCameras();
-//  return;
+  bool calibrate;
+  nh_private_.getParam("calibrate", calibrate);
+  if (calibrate){
+    GetRelativePoseCameras();
+    return;
+  }
 //  //******************
   sub_rgb_.subscribe  (rgb_image_transport_,
     "/"+cam_name_+"/camera/rgb/image", queue_size_);
@@ -132,43 +136,53 @@ void RGBDImageProc::GetRelativePoseCameras(){
     pcl::removeNaNFromPointCloud(*map2,*map2,indices);
 
 //    ICPRegistration(map1,map2,combinedMap,&transform);
+    int N_ITERS = 100;
+
+    // The Iterative Closest Point algorithm
+    ROS_INFO("Performing ICP...");
+    pcl::IterativeClosestPoint<PointT, PointT> icp;
+    icp.setMaximumIterations(N_ITERS);
+    icp.setInputSource(map2);
+    icp.setInputTarget(map1);
+    icp.align(*ICP_map);
+    matrix = icp.getFinalTransformation();
+    ROS_INFO("Finished with ICP");
 
     // **** ICP Registration using the Non-Linear method
-    int N_ITERS = 100;
-    ROS_INFO("Starting ICP...");
-    pcl::IterativeClosestPointNonLinear<PointT, PointT> reg;
-    reg.setTransformationEpsilon (1e-4);
-    // Set the maximum distance between two correspondences (src<->tgt) to 10cm
-    // Note: adjust this based on the size of your datasets
-    reg.setMaxCorrespondenceDistance (10);
-    // Set the point representation
-    reg.setInputTarget (map1);
+//    ROS_INFO("Starting ICP...");
+//    pcl::IterativeClosestPointNonLinear<PointT, PointT> reg;
+//    reg.setTransformationEpsilon (1e-4);
+//    // Set the maximum distance between two correspondences (src<->tgt) to 10cm
+//    // Note: adjust this based on the size of your datasets
+//    reg.setMaxCorrespondenceDistance (10);
+//    // Set the point representation
+//    reg.setInputTarget (map1);
 
-    Eigen::Matrix4f Ti = Eigen::Matrix4f::Identity (), prev;
-    PointCloudT::Ptr reg_result = map2;
-    reg.setMaximumIterations (2);
-    for (int i = 0; i < N_ITERS; ++i)
-    {
-      PCL_INFO ("Iteration Nr. %d.\n", i);
+//    Eigen::Matrix4f Ti = Eigen::Matrix4f::Identity (), prev;
+//    PointCloudT::Ptr reg_result = map2;
+//    reg.setMaximumIterations (2);
+//    for (int i = 0; i < N_ITERS; ++i)
+//    {
+//      PCL_INFO ("Iteration Nr. %d.\n", i);
 
-      reg.setInputSource (reg_result);
-      reg.align (*reg_result);
+//      reg.setInputSource (reg_result);
+//      reg.align (*reg_result);
 
-          //accumulate transformation between each Iteration
-      Ti = reg.getFinalTransformation () * Ti;
+//          //accumulate transformation between each Iteration
+//      Ti = reg.getFinalTransformation () * Ti;
 
-          //if the difference between this transformation and the previous one
-          //is smaller than the threshold, refine the process by reducing
-          //the maximal correspondence distance
-      if (fabs ((reg.getLastIncrementalTransformation () - prev).sum ()) < reg.getTransformationEpsilon ())
-        reg.setMaxCorrespondenceDistance (reg.getMaxCorrespondenceDistance ()/2);
+//          //if the difference between this transformation and the previous one
+//          //is smaller than the threshold, refine the process by reducing
+//          //the maximal correspondence distance
+//      if (fabs ((reg.getLastIncrementalTransformation () - prev).sum ()) < reg.getTransformationEpsilon ())
+//        reg.setMaxCorrespondenceDistance (reg.getMaxCorrespondenceDistance ()/2);
 
-      prev = reg.getLastIncrementalTransformation ();
-      ROS_INFO("Current Max CorrespondenceDistance: %.5f",reg.getMaxCorrespondenceDistance());
-    }
+//      prev = reg.getLastIncrementalTransformation ();
+//      ROS_INFO("Current Max CorrespondenceDistance: %.5f",reg.getMaxCorrespondenceDistance());
+//    }
 
-    matrix = Ti;
-    ICP_map = reg_result;
+//    matrix = Ti;
+//    ICP_map = reg_result;
 //    // Align
 //    int N_ITERS = 50;
 //    ROS_INFO("Starting ICP...");
@@ -410,7 +424,7 @@ void RGBDImageProc::RGBDCallback(
   
   // Convert BGR image to RGB for displaying purposes
   cv::cvtColor(rgb_img,rgb_img,CV_BGR2RGB);
-  cv::imshow("RGB", rgb_img);
+  cv::imshow("RGB_" + cam_name_, rgb_img);
 //  cv::imshow("Depth", depth_img);
   cv::waitKey(1);
   

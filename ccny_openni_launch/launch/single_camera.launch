@@ -2,12 +2,14 @@
 <launch> 
 
 <arg name="cam_id" default="1" />
+<arg name="calibrate" default="false"/>
 
 <group ns="cam$(arg cam_id)" >
 	<!-- Openni Driver and RGBD processing -->
 	<include file="$(find ccny_openni_launch)/launch/openni_modified.launch">
 		<arg name="publish_cloud"  value="true" />
 		<arg name="device_id" value="$(arg cam_id)" />
+		<arg name="calibrate" value="$(arg calibrate)"/>
 	</include>
 		    
 	<!-- Visual odometry 
