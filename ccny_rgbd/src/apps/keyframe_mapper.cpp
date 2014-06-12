@@ -88,7 +88,7 @@ KeyframeMapper::KeyframeMapper(
   sync_.reset(new RGBDSynchronizer3(
                 RGBDSyncPolicy3(queue_size_), sub_rgb_, sub_depth_, sub_info_));
    
-  sync_->registerCallback(boost::bind(&KeyframeMapper::RGBDCallback, this, _1, _2, _3));  
+  sync_->registerCallback(boost::bind(&KeyframeMapper::RGBDCallback, this, _1, _2, _3));
 }
 
 KeyframeMapper::~KeyframeMapper()
@@ -498,7 +498,7 @@ bool KeyframeMapper::savePcdMapSrvCallback(
   ROS_INFO("Saving map as pcd...");
   const std::string& path = request.filename; 
   bool result = savePcdMap(path);
-  
+
   if (result) ROS_INFO("Pcd map saved to %s", path.c_str());
   else ROS_ERROR("Pcd map saving failed");
   
