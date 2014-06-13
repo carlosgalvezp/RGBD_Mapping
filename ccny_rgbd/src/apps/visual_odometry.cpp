@@ -496,7 +496,7 @@ void VisualOdometry::publishModelCloud()
   // **** Save to disk before publishing
   // write out
   pcl::PCDWriter writer;
-  const std::string path = "/home/carlos/"+cam_name_+"_features.pcd";
+  const std::string path = "/home/robo/"+cam_name_+"_features.pcd";
   writer.writeBinary<PointFeature>(path, *model_cloud_ptr);
   model_cloud_publisher_.publish(model_cloud_ptr);
 }

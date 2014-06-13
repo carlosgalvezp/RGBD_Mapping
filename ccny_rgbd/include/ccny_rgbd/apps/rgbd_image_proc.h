@@ -44,6 +44,7 @@
 
 #include <pcl/visualization/pcl_visualizer.h>
 #include <iostream>
+#include <fstream>
 
 namespace ccny_rgbd {
 
@@ -93,6 +94,7 @@ class RGBDImageProc
                       const CameraInfoMsg::ConstPtr& depth_info_msg);
 
     void GetRelativePoseCameras();
+    void MergeMaps();
 //    void ICPRegistration(pcl::PointCloud::Ptr &map1, pcl::PointCloud::Ptr &map2, pcl::PointCloud::Ptr *combinedMap, Eigen::Matrix4f *transform);
 
   private:
