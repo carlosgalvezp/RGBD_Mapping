@@ -93,10 +93,23 @@ class RGBDImageProc
                       const CameraInfoMsg::ConstPtr& rgb_info_msg,
                       const CameraInfoMsg::ConstPtr& depth_info_msg);
 
+    // *****************************************
     void GetRelativePoseCameras();
     void MergeMaps();
-//    void ICPRegistration(pcl::PointCloud::Ptr &map1, pcl::PointCloud::Ptr &map2, pcl::PointCloud::Ptr *combinedMap, Eigen::Matrix4f *transform);
+    void ICPRegistration_Basic(const PointCloudT::Ptr map1,
+                               const PointCloudT::Ptr map2,
+                               const bool iterative,
+                               PointCloudT::Ptr transfMap2,
+                               Eigen::Matrix4f& transform);
 
+    void ICPRegistration_NonLinear(const PointCloudT::Ptr map1,
+                                   const PointCloudT::Ptr map2,
+                                   const bool iterative,
+                                   PointCloudT::Ptr transfMap2,
+                                   Eigen::Matrix4f& transform);
+    void ICPRegistration_SVD(PointCloudT& map1, PointCloudT& map2, PointCloudT *combinedMap, Eigen::Matrix4f *transform, bool iterative);
+
+    // *****************************************
   private:
     // **** My params
     std::string cam_name_; //Camera ID
