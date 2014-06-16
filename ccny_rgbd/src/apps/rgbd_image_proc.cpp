@@ -304,6 +304,41 @@ void RGBDImageProc::ICPRegistration_NonLinear(const PointCloudT::Ptr map1,
     ROS_INFO("ICP has finished");
 }
 
+void RGBDImageProc::RANSAC_Registration(const PointCloudT::Ptr map1,
+                                        const PointCloudT::Ptr map2,
+                                        const bool useSIFT,
+                                        PointCloudT::Ptr transfMap2,
+                                        Eigen::Matrix4f& transform){
+
+    // **** (Optional: extract SIFT keypoints?)
+
+    // **** RANSAC
+    pcl::SampleConsensusModelRegistration<PointT>::Ptr sac_model
+            (new pcl::SampleConsensusModelRegistration<PointT>(map2));
+    sac_model->setInputTarget(map1);
+
+    pcl::RandomSampleConsensus<PointT> ransac(sac_model);
+    // RANSAC Parameters
+    ransac.setDistanceThreshold(0.1);
+    ransac.setMaxIterations(1000);
+
+    // Compute model
+    ROS_INFO("Computing model with RANSAC...");
+    ransac.computeModel();
+
+    // Extract matrix
+    Eigen::VectorXf coeffs;
+    ransac.getModelCoefficients(coeffs);
+
+    transform = Eigen::Map<Eigen::Matrix4f>(coeffs.data(),4,4);
+
+    // Print number of inliers
+    std::vector<int> inliers;
+    ransac.getInliers(inliers);
+    ROS_INFO("Number of inliers: %lu",inliers.size());
+
+}
+
 // **************************************************************************
 
 

@@ -45,7 +45,8 @@
 #include <pcl/visualization/pcl_visualizer.h>
 #include <iostream>
 #include <fstream>
-
+#include <pcl/sample_consensus/sac_model_registration.h>
+#include <pcl/sample_consensus/ransac.h>
 namespace ccny_rgbd {
 
 /** @brief Processes the raw output of OpenNI sensors to create
@@ -107,8 +108,11 @@ class RGBDImageProc
                                    const bool iterative,
                                    PointCloudT::Ptr transfMap2,
                                    Eigen::Matrix4f& transform);
-    void ICPRegistration_SVD(PointCloudT& map1, PointCloudT& map2, PointCloudT *combinedMap, Eigen::Matrix4f *transform, bool iterative);
-
+    void RANSAC_Registration(const PointCloudT::Ptr map1,
+                                            const PointCloudT::Ptr map2,
+                                            const bool useSIFT,
+                                            PointCloudT::Ptr transfMap2,
+                                            Eigen::Matrix4f& transform);
     // *****************************************
   private:
     // **** My params
