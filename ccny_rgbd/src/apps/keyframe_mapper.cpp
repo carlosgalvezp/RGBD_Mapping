@@ -703,6 +703,7 @@ void KeyframeMapper::buildPcdMap(PointCloudT& map_cloud)
   }
 
   // filter cloud using voxel grid, and for max z
+  ROS_WARN("Building map with resolution: %.3f",pcd_map_res_);
   pcl::VoxelGrid<PointT> vgf;
   vgf.setInputCloud(aggregate_cloud);
   vgf.setLeafSize(pcd_map_res_, pcd_map_res_, pcd_map_res_);

@@ -1,14 +1,18 @@
 <!-- Launch all the cameras -->
 <launch> 
 
+<arg name="map_resolution" default="0.01"/>
+
 <!-- First camera -->
 <include file="$(find ccny_openni_launch)/launch/single_camera.launch">
 	<arg name="cam_id"  value="1" />
+	<arg name="map_resolution" value="$(arg map_resolution)"/>
 </include>
 
 <!-- Second camera  -->
 <include file="$(find ccny_openni_launch)/launch/single_camera.launch">
 	<arg name="cam_id"  value="2" />
+	<arg name="map_resolution" value="$(arg map_resolution)"/>
 </include>
 
   <!-- static transforms-->
