@@ -139,8 +139,7 @@ void RGBDImageProc::GetRelativePoseCameras(){
 
     // **** ICP Registration
 
-    ICPRegistration_Basic(map1,map2,false,transfMap2,matrix);
-//    ICPRegistration_NonLinear(map1,map2,false,transfMap2,matrix);
+    RANSAC_Registration(map2,map1,0,0,transfMap2,matrix);
 
    //**** Combine PCL maps once they are in the same coordinate frame
     ROS_INFO("Combining maps");
@@ -304,39 +303,224 @@ void RGBDImageProc::ICPRegistration_NonLinear(const PointCloudT::Ptr map1,
     ROS_INFO("ICP has finished");
 }
 
-void RGBDImageProc::RANSAC_Registration(const PointCloudT::Ptr map1,
-                                        const PointCloudT::Ptr map2,
-                                        const bool useSIFT,
-                                        PointCloudT::Ptr transfMap2,
+void RGBDImageProc::RANSAC_Registration(const PointCloudT::Ptr mapSource,
+                                        const PointCloudT::Ptr mapTarget,
+                                        const int keypoint_type,
+                                        const int descriptor_type,
+                                        PointCloudT::Ptr transfMapSource,
                                         Eigen::Matrix4f& transform){
 
-    // **** (Optional: extract SIFT keypoints?)
+    ROS_INFO("Robust point cloud registration");
 
-    // **** RANSAC
-    pcl::SampleConsensusModelRegistration<PointT>::Ptr sac_model
-            (new pcl::SampleConsensusModelRegistration<PointT>(map2));
-    sac_model->setInputTarget(map1);
+    // **** Get 3D keypoints
+    ROS_INFO("1.- Getting 3D keypoints");
+    pcl::PointCloud<pcl::PointXYZI>::Ptr keypointsSource (new pcl::PointCloud<pcl::PointXYZI>);
+    pcl::PointCloud<pcl::PointXYZI>::Ptr keypointsTarget (new pcl::PointCloud<pcl::PointXYZI>);
 
-    pcl::RandomSampleConsensus<PointT> ransac(sac_model);
-    // RANSAC Parameters
-    ransac.setDistanceThreshold(0.1);
-    ransac.setMaxIterations(1000);
+    switch(keypoint_type)
+    {
+        case 0: // SIFT
+        {
+            ROS_INFO("Extracting 3D SIFT keypoints");
+            reg_ComputeSIFTKeypoints(mapSource,keypointsSource);
+            reg_ComputeSIFTKeypoints(mapTarget,keypointsTarget);
+        }
+        break;
 
-    // Compute model
-    ROS_INFO("Computing model with RANSAC...");
-    ransac.computeModel();
+        case 1: // NARF
+        {
+            ROS_INFO("Extracting 3D NARF keypoints");
+        }
+        break;
 
-    // Extract matrix
-    Eigen::VectorXf coeffs;
-    ransac.getModelCoefficients(coeffs);
+    }
 
-    transform = Eigen::Map<Eigen::Matrix4f>(coeffs.data(),4,4);
+    // **** Get descriptor for each keypoint
+    ROS_INFO("2.- Getting descriptors of 3D keypoints");
+    pcl::PointCloud<pcl::FPFHSignature33>::Ptr descriptorsSource (new pcl::PointCloud<pcl::FPFHSignature33>);
+    pcl::PointCloud<pcl::FPFHSignature33>::Ptr descriptorsTarget(new pcl::PointCloud<pcl::FPFHSignature33>);
+    switch (descriptor_type)
+    {
+        /// @todo
+        case 0: // FPFH
+            reg_ComputeFPFHDescriptors(mapSource,keypointsSource,descriptorsSource);
+            reg_ComputeFPFHDescriptors(mapTarget,keypointsTarget,descriptorsTarget);
+        break;
+    }
 
-    // Print number of inliers
-    std::vector<int> inliers;
-    ransac.getInliers(inliers);
-    ROS_INFO("Number of inliers: %lu",inliers.size());
+    // **** Match keypoints between point clouds
+    ROS_INFO("3.- Matching keypoints");
+    std::vector<int> source2target_;
+    std::vector<int> target2source_;
 
+    reg_matchFeatures(descriptorsSource, descriptorsTarget, source2target_);
+    reg_matchFeatures(descriptorsTarget, descriptorsSource, target2source_);
+
+    // **** Remove false correspondences using RANSAC
+    ROS_INFO("4.- Outlier rejection using RANSAC");
+    pcl::CorrespondencesPtr correspondences (new pcl::Correspondences);
+    reg_filterCorrespondences(target2source_,source2target_,keypointsSource,keypointsTarget,correspondences);
+
+    // **** Rough initial estimation using the SVD algorithm
+    ROS_INFO("5.- Initial transformation using SVD");
+    Eigen::Matrix4f initial_transformation_matrix;
+    reg_InitialTransformation(keypointsSource,keypointsTarget,correspondences,initial_transformation_matrix);
+
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr source_transformed (new pcl::PointCloud<pcl::PointXYZRGB>);
+    pcl::transformPointCloud(*mapSource, *source_transformed, initial_transformation_matrix);
+
+    // **** Final accurate ICP alignment
+    ROS_INFO("6.- Final transformation using ICP");
+    Eigen::Matrix4f final_transformation_matrix;
+
+    reg_FinalTransformation(source_transformed, mapTarget, transfMapSource, final_transformation_matrix);
+    transform = final_transformation_matrix * initial_transformation_matrix;
+
+    ROS_INFO("The registration is now completed");
+}
+
+void RGBDImageProc::reg_ComputeSIFTKeypoints
+                             (const pcl::PointCloud<pcl::PointXYZRGB>::Ptr points,
+                              pcl::PointCloud<pcl::PointXYZI>::Ptr keypoints)
+{
+    // SIFT detector
+    pcl::SIFTKeypoint<pcl::PointXYZRGB,pcl::PointXYZI>* sift3D = new pcl::SIFTKeypoint<pcl::PointXYZRGB,pcl::PointXYZI>;
+
+    // Configure params
+    sift3D->setSearchMethod(pcl::search::KdTree<pcl::PointXYZRGB>::Ptr(new pcl::search::KdTree<pcl::PointXYZRGB>));
+    sift3D->setScales(0.01,3,2);
+    sift3D->setMinimumContrast(0.0);
+    sift3D->setInputCloud(points);
+    sift3D->setSearchSurface(points);
+
+    // Compute keypoints
+    sift3D->compute(*keypoints);
+}
+
+void RGBDImageProc::reg_ComputeNormals
+        (const pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
+         pcl::PointCloud<pcl::Normal>::Ptr normals)
+{
+    pcl::NormalEstimation<pcl::PointXYZRGB,pcl::Normal>::Ptr normalEstimation
+            (new pcl::NormalEstimation<pcl::PointXYZRGB,pcl::Normal>);
+
+    // Params
+    normalEstimation->setSearchMethod(pcl::search::KdTree<pcl::PointXYZRGB>::Ptr
+                                      (new pcl::search::KdTree<pcl::PointXYZRGB>));
+    normalEstimation->setRadiusSearch(0.01);
+    normalEstimation->setInputCloud(cloud);
+
+    // Compute normals
+    normalEstimation->compute(*normals);
+}
+
+void RGBDImageProc::reg_ComputeFPFHDescriptors
+                                  (const pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
+                                   pcl::PointCloud<pcl::PointXYZI>::Ptr keypoints,
+                                   pcl::PointCloud<pcl::FPFHSignature33>::Ptr descriptors)
+{
+    // **** Compute normals, since PFH needs them
+    pcl::PointCloud<pcl::Normal>::Ptr normals(new pcl::PointCloud<pcl::Normal>);
+    reg_ComputeNormals(cloud,normals);
+
+    // **** Compute PFH descriptor
+    pcl::FPFHEstimation<pcl::PointXYZRGB,pcl::Normal,pcl::FPFHSignature33>::Ptr fpfh
+            (new pcl::FPFHEstimation<pcl::PointXYZRGB,pcl::Normal,pcl::FPFHSignature33>);
+
+    // Configure params
+    fpfh->setSearchMethod(pcl::search::KdTree<pcl::PointXYZRGB>::Ptr(new pcl::search::KdTree<pcl::PointXYZRGB>));
+    fpfh->setRadiusSearch(0.05); //This value must be > the one used for computing the normals!!
+    fpfh->setInputNormals(normals);
+
+    fpfh->setSearchSurface(cloud);
+
+    // Fix to go from PointXYZI to PointXYZRGB
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr kpts (new pcl::PointCloud<pcl::PointXYZRGB>);
+    kpts->points.resize(keypoints->points.size());
+    pcl::copyPointCloud(*keypoints,*kpts);
+
+    fpfh->setInputCloud(kpts);
+
+    // Compute descriptors
+    fpfh->compute(*descriptors);
+}
+
+void RGBDImageProc::reg_matchFeatures(const pcl::PointCloud<pcl::FPFHSignature33>::Ptr source_features,
+                                       const pcl::PointCloud<pcl::FPFHSignature33>::Ptr target_features,
+                                       std::vector<int>& correspondences)
+{
+    correspondences.resize(source_features->size());
+
+    // Use a KdTree for a quick search
+    pcl::search::KdTree<pcl::FPFHSignature33> descriptor_kdtree;
+    descriptor_kdtree.setInputCloud(target_features);
+
+    // Find the index of the best match for each keypoint
+    const int k = 1; // Number of closest points to obtain at each iteration
+    std::vector<int> k_indices(k);
+    std::vector<float> k_squared_distances(k);
+
+    for (size_t i = 0; i < source_features->size(); ++i)
+    {
+        descriptor_kdtree.nearestKSearch(*source_features,i,k,k_indices,k_squared_distances);
+        correspondences[i] = k_indices[0];
+    }
+}
+
+void RGBDImageProc::reg_filterCorrespondences(std::vector<int>& target2source_,
+                                              std::vector<int>& source2target_,
+                                              pcl::PointCloud<pcl::PointXYZI>::Ptr source_keypoints_,
+                                              pcl::PointCloud<pcl::PointXYZI>::Ptr target_keypoints_,
+                                              pcl::CorrespondencesPtr correspondences_)
+{
+    std::vector<std::pair<unsigned, unsigned> > correspondences;
+    for (unsigned cIdx = 0; cIdx < source2target_.size(); ++cIdx)
+        if (target2source_[source2target_[cIdx]] == cIdx)
+          correspondences.push_back(std::make_pair(cIdx, source2target_[cIdx]));
+
+      correspondences_->resize (correspondences.size());
+      for (unsigned cIdx = 0; cIdx < correspondences.size(); ++cIdx)
+      {
+        (*correspondences_)[cIdx].index_query = correspondences[cIdx].first;
+        (*correspondences_)[cIdx].index_match = correspondences[cIdx].second;
+      }
+
+      pcl::registration::CorrespondenceRejectorSampleConsensus<pcl::PointXYZI> rejector;
+      rejector.setInputSource(source_keypoints_);
+      rejector.setInputTarget(target_keypoints_);
+      rejector.setInputCorrespondences(correspondences_);
+      rejector.getCorrespondences(*correspondences_);
+}
+
+
+void RGBDImageProc::reg_InitialTransformation(pcl::PointCloud<pcl::PointXYZI>::Ptr source_keypoints,
+                                               pcl::PointCloud<pcl::PointXYZI>::Ptr target_keypoints,
+                                               pcl::CorrespondencesPtr correspondences,
+                                               Eigen::Matrix4f& initial_transformation_matrix)
+{
+    pcl::registration::TransformationEstimation<pcl::PointXYZI, pcl::PointXYZI>::Ptr transformation_estimation
+            (new pcl::registration::TransformationEstimationSVD<pcl::PointXYZI, pcl::PointXYZI>);
+
+    transformation_estimation->estimateRigidTransformation(*source_keypoints, *target_keypoints,
+                                                           *correspondences, initial_transformation_matrix);
+}
+
+
+void RGBDImageProc::reg_FinalTransformation(pcl::PointCloud<pcl::PointXYZRGB>::Ptr source_transformed,
+                                            pcl::PointCloud<pcl::PointXYZRGB>::Ptr target,
+                                            pcl::PointCloud<pcl::PointXYZRGB>::Ptr source_registered,
+                                            Eigen::Matrix4f& final_transformation_matrix)
+{
+    pcl::Registration<pcl::PointXYZRGB, pcl::PointXYZRGB>::Ptr registration (new pcl::IterativeClosestPoint<pcl::PointXYZRGB, pcl::PointXYZRGB>);
+    registration->setInputCloud(source_transformed);
+    registration->setInputTarget (target);
+    // Params
+    registration->setMaxCorrespondenceDistance(0.05);
+    registration->setRANSACOutlierRejectionThreshold (0.05);
+    registration->setTransformationEpsilon (0.000001);
+    registration->setMaximumIterations (1000);
+    registration->align(*source_registered);
+    final_transformation_matrix = registration->getFinalTransformation();
 }
 
 // **************************************************************************

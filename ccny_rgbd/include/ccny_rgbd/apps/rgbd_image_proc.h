@@ -47,6 +47,12 @@
 #include <fstream>
 #include <pcl/sample_consensus/sac_model_registration.h>
 #include <pcl/sample_consensus/ransac.h>
+#include <pcl/features/normal_3d.h>
+#include <pcl/features/fpfh.h>
+#include <pcl/features/pfh.h>
+#include <pcl/impl/point_types.hpp>
+#include <pcl/keypoints/sift_keypoint.h>
+#include <pcl/registration/correspondence_rejection_sample_consensus.h>
 namespace ccny_rgbd {
 
 /** @brief Processes the raw output of OpenNI sensors to create
@@ -108,11 +114,38 @@ class RGBDImageProc
                                    const bool iterative,
                                    PointCloudT::Ptr transfMap2,
                                    Eigen::Matrix4f& transform);
-    void RANSAC_Registration(const PointCloudT::Ptr map1,
-                                            const PointCloudT::Ptr map2,
-                                            const bool useSIFT,
-                                            PointCloudT::Ptr transfMap2,
-                                            Eigen::Matrix4f& transform);
+    void RANSAC_Registration(const PointCloudT::Ptr map2, const PointCloudT::Ptr map1,
+                             const int keypoint_type,
+                             const int descriptor_type,
+                             PointCloudT::Ptr transfMapSource,
+                             Eigen::Matrix4f& transform);
+
+    void reg_ComputeSIFTKeypoints(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr points,
+                                  pcl::PointCloud<pcl::PointXYZI>::Ptr keypoints);
+
+    void reg_ComputeFPFHDescriptors(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
+                                    pcl::PointCloud<pcl::PointXYZI>::Ptr keypoints,
+                                    pcl::PointCloud<pcl::FPFHSignature33>::Ptr descriptors);
+
+    void reg_ComputeNormals(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
+                            pcl::PointCloud<pcl::Normal>::Ptr normals);
+
+    void reg_matchFeatures(const pcl::PointCloud<pcl::FPFHSignature33>::Ptr source_features,
+                           const pcl::PointCloud<pcl::FPFHSignature33>::Ptr target_features,
+                           std::vector<int>& correspondences);
+    void reg_filterCorrespondences(std::vector<int>& target2source_,
+                                                  std::vector<int>& source2target_,
+                                                  pcl::PointCloud<pcl::PointXYZI>::Ptr source_keypoints_,
+                                                  pcl::PointCloud<pcl::PointXYZI>::Ptr target_keypoints_,
+                                                  pcl::CorrespondencesPtr correspondences_);
+    void reg_InitialTransformation(pcl::PointCloud<pcl::PointXYZI>::Ptr source_keypoints,
+                                                   pcl::PointCloud<pcl::PointXYZI>::Ptr target_keypoints,
+                                                   pcl::CorrespondencesPtr correspondences,
+                                                   Eigen::Matrix4f& initial_transformation_matrix);
+    void reg_FinalTransformation(pcl::PointCloud<pcl::PointXYZRGB>::Ptr source_transformed,
+                                                pcl::PointCloud<pcl::PointXYZRGB>::Ptr target,
+                                                pcl::PointCloud<pcl::PointXYZRGB>::Ptr source_registered,
+                                                Eigen::Matrix4f& final_transformation_matrix);
     // *****************************************
   private:
     // **** My params
