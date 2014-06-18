@@ -159,16 +159,22 @@ ICCVTutorial<FeatureType>::ICCVTutorial(boost::shared_ptr<pcl::Keypoint<pcl::Poi
   visualizer_.registerKeyboardCallback(&ICCVTutorial::keyboard_callback, *this, 0);
   visualizer_.addCoordinateSystem(1.0);
 
-  segmentation (source_, source_segmented_);
-  segmentation (target_, target_segmented_);  
-  
-  source_segmented_->resize(source_->size());
-  target_segmented_->resize(target_->size());
-  pcl::copyPointCloud(*source_,*source_segmented_);
-  pcl::copyPointCloud(*target_,*target_segmented_);
+  //**** Remove NaN
+  std::cout<<"Removing NaN points...";
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr source_Nan_ (new pcl::PointCloud<pcl::PointXYZRGB>);
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr target_Nan_ (new pcl::PointCloud<pcl::PointXYZRGB>);
 
-//  source_segmented_ = source_;
-//  target_segmented_ = target_;
+  std::vector<int> indices;
+  pcl::removeNaNFromPointCloud(*source_, *source_Nan_,indices);
+  pcl::removeNaNFromPointCloud(*target_, *target_Nan_,indices);
+  std::cout<<"OK\n";
+//  segmentation (source_, source_segmented_);
+//  segmentation (target_, target_segmented_);
+  
+  source_segmented_->resize(source_Nan_->size());
+  target_segmented_->resize(target_Nan_->size());
+  pcl::copyPointCloud(*source_Nan_,*source_segmented_);
+  pcl::copyPointCloud(*target_Nan_,*target_segmented_);
 
   detectKeypoints (source_segmented_, source_keypoints_);
   detectKeypoints (target_segmented_, target_keypoints_);
