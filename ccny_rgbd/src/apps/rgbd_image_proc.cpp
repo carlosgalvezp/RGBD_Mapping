@@ -122,11 +122,11 @@ void RGBDImageProc::GetRelativePoseCameras(){
     PointCloudT::Ptr combinedMap (new PointCloudT);
     Eigen::Matrix4f matrix;
 
-    if (pcl::io::loadPCDFile("/home/robo/cam1_features.pcd", *map1) == -1) //* load the file
+    if (pcl::io::loadPCDFile("/home/robo/map1Objects_0001.pcd", *map1) == -1) //* load the file
     {
       PCL_ERROR ("Couldn't read file map1.pcd \n");
     }
-    if (pcl::io::loadPCDFile("/home/robo/cam2_features.pcd", *map2) == -1) //* load the file
+    if (pcl::io::loadPCDFile("/home/robo/map2Objects_0001.pcd", *map2) == -1) //* load the file
     {
       PCL_ERROR ("Couldn't read file map2.pcd \n");
     }

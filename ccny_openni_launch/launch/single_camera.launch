@@ -3,6 +3,7 @@
 
 <arg name="cam_id" default="1" />
 <arg name="calibrate" default="false"/>
+<arg name="map_resolution" default="0.01"/>
 
 <group ns="cam$(arg cam_id)" >
 	<!-- Openni Driver and RGBD processing -->
@@ -19,6 +20,7 @@
 	<!-- Visual odometry and mapping-->
 	<include file="$(find ccny_rgbd)/launch/vo+mapping.launch">  
 		<arg name="cam_name" value="cam$(arg cam_id)" />     
+		<arg name="map_resolution" value="$(arg map_resolution)"/>		
 	</include> 
 
 </group>
