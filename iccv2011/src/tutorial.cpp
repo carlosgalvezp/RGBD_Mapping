@@ -34,6 +34,7 @@
 #include <pcl/surface/gp3.h>
 #include <pcl/surface/marching_cubes_hoppe.h>
 
+#include <pcl/filters/filter.h>
 template<typename FeatureType>
 class ICCVTutorial
 {
@@ -106,6 +107,9 @@ class ICCVTutorial
      */
     void keyboard_callback (const pcl::visualization::KeyboardEvent& event, void* cookie);
     
+    void remove_InvalidPoints(typename pcl::PointCloud<FeatureType>::Ptr cloud_in,
+                              typename pcl::PointCloud<FeatureType>::Ptr cloud_out);
+
   private:
     pcl::visualization::PCLVisualizer visualizer_;
     pcl::PointCloud<pcl::PointXYZI>::Ptr source_keypoints_;
@@ -167,6 +171,7 @@ ICCVTutorial<FeatureType>::ICCVTutorial(boost::shared_ptr<pcl::Keypoint<pcl::Poi
   std::vector<int> indices;
   pcl::removeNaNFromPointCloud(*source_, *source_Nan_,indices);
   pcl::removeNaNFromPointCloud(*target_, *target_Nan_,indices);
+
   std::cout<<"OK\n";
 //  segmentation (source_, source_segmented_);
 //  segmentation (target_, target_segmented_);
@@ -182,6 +187,10 @@ ICCVTutorial<FeatureType>::ICCVTutorial(boost::shared_ptr<pcl::Keypoint<pcl::Poi
   extractDescriptors (source_segmented_, source_keypoints_, source_features_);
   extractDescriptors (target_segmented_, target_keypoints_, target_features_);
   
+  //Remove invalid points
+  remove_InvalidPoints(source_features_,source_features_);
+  remove_InvalidPoints(target_features_,target_features_);
+
   findCorrespondences (source_features_, target_features_, source2target_);
   findCorrespondences (target_features_, source_features_, target2source_);
   
@@ -210,6 +219,32 @@ ICCVTutorial<FeatureType>::ICCVTutorial(boost::shared_ptr<pcl::Keypoint<pcl::Poi
       }
   }
   myfile.close();
+}
+
+template<typename FeatureType>
+void ICCVTutorial<FeatureType>::remove_InvalidPoints(typename pcl::PointCloud<FeatureType>::Ptr cloud_in,
+                                                     typename pcl::PointCloud<FeatureType>::Ptr cloud_out)
+{
+    std::cout<<"Removing invalid points from cloud of size: "<<cloud_in->size()<<"...";
+
+    typename pcl::PointCloud<FeatureType>::Ptr outTmp (new pcl::PointCloud<FeatureType>);
+    typename pcl::DefaultPointRepresentation<FeatureType> point_representation;
+
+    for(unsigned i = 0; i < cloud_in->size(); i++)
+    {
+        if(point_representation.isValid(cloud_in->at(i)))
+        {
+            outTmp->push_back(cloud_in->at(i));
+        }
+        else
+        {
+            PCL_WARN("POINT NOT VALID\n");
+        }
+    }
+
+    cloud_out->resize(outTmp->size());
+    pcl::copyPointCloud(*outTmp, *cloud_out);
+    std::cout<<"New size: "<<outTmp->size()<<"\n";
 }
 
 template<typename FeatureType>
@@ -352,8 +387,8 @@ void ICCVTutorial<FeatureType>::filterCorrespondences ()
   }
   
   pcl::registration::CorrespondenceRejectorSampleConsensus<pcl::PointXYZI> rejector;
-  rejector.setInputCloud(source_keypoints_);
-  rejector.setTargetCloud(target_keypoints_);
+  rejector.setInputSource(source_keypoints_);
+  rejector.setInputTarget(target_keypoints_);
   rejector.setInputCorrespondences(correspondences_);
   rejector.getCorrespondences(*correspondences_);
   cout << "OK" << endl;
@@ -376,7 +411,7 @@ void ICCVTutorial<FeatureType>::determineFinalTransformation ()
 {
   cout << "final registration..." << std::flush;
   pcl::Registration<pcl::PointXYZRGB, pcl::PointXYZRGB>::Ptr registration (new pcl::IterativeClosestPoint<pcl::PointXYZRGB, pcl::PointXYZRGB>);
-  registration->setInputCloud(source_transformed_);
+  registration->setInputSource(source_transformed_);
   //registration->setInputCloud(source_segmented_);
   registration->setInputTarget (target_segmented_);
   registration->setMaxCorrespondenceDistance(0.05);
@@ -663,7 +698,7 @@ main (int argc, char ** argv)
       tutorial.run ();
     }
     break;
-    
+
     case 2:
     {
       pcl::SHOTColorEstimationOMP<pcl::PointXYZRGB, pcl::Normal, pcl::SHOT1344>* shot = new pcl::SHOTColorEstimationOMP<pcl::PointXYZRGB, pcl::Normal, pcl::SHOT1344>;
