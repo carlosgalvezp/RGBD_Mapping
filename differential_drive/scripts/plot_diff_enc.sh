@@ -1,0 +1,1 @@
+rxplot /motion/Encoders/delta_encoder1 /motion/Encoders/delta_encoder2 -r 10

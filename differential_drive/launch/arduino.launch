@@ -1,0 +1,5 @@
+<launch>
+  <node name="rosserial_python" pkg="rosserial_python" type="serial_node.py" respawn="true" args="/dev/ttyACM0" output="screen"/>
+  <node name="mode1" pkg="differential_drive" type="mode1" output="screen"/>
+  <node name="visu" pkg="differential_drive" type="HumanInterface2"/>
+</launch>
