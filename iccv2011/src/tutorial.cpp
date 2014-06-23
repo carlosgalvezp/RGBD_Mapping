@@ -236,7 +236,7 @@ ICCVTutorial<FeatureType>::ICCVTutorial(boost::shared_ptr<pcl::Keypoint<pcl::Poi
 
   //**** Write transformation matrix into file
   ofstream myfile;
-  myfile.open ("/home/robo/transformation.txt");
+  myfile.open ("/home/carlos/transformation.txt");
   for(int i=0;i<4;i++){
       for(int j=0;j<4;j++){
           myfile<<matrix(i,j)<<"\n";
@@ -441,6 +441,8 @@ void ICCVTutorial<FeatureType>::filterCorrespondences ()
   rejector.setInputSource(source_keypoints_);
   rejector.setInputTarget(target_keypoints_);
   rejector.setInputCorrespondences(correspondences_);
+  rejector.setInlierThreshold(0.1);
+  rejector.setMaximumIterations(10000);
   rejector.getCorrespondences(*correspondences_);
   cout << "Final #correspondences: "<<correspondences_->size()<< endl;
 }
