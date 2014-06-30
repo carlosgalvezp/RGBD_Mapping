@@ -397,9 +397,9 @@ void loop()  {
       low_batt = false;
     }
     
-    if(low_batt)  {
-      tone(7,440,500); 
-    }
+    //if(low_batt)  {
+      //tone(7,440,500); 
+    //}
     
     t = millis();
   }
