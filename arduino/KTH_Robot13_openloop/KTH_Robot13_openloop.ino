@@ -1,3 +1,4 @@
+
 /*
  *
  * KTH_Robot13_openLoop.ino
@@ -25,7 +26,7 @@
 
 
 #include <ros.h>
-#include <differential_drive/PWM.h>
+#include <differential_drive/Speed.h>
 #include <differential_drive/Encoders.h>
 #include <differential_drive/AnalogC.h>
 #include <differential_drive/Servomotors.h>
@@ -75,6 +76,10 @@ int encoder1, encoder1_old ;
 int encoder1_loc,encoder2_loc ;
 int encoder2, encoder2_old ;
 
+float W1_cons = 0;
+float W2_cons = 0;
+int K_W = 20;
+
 unsigned long time,time_old;
 unsigned long t_enc, t_enc_old;
 unsigned long wdtime ;
@@ -91,7 +96,7 @@ ros::Publisher p("/motion/Encoders", &imlost);  // Create a publisher to "/motio
 ros::Publisher sensor("/sensors/ADC", &Amsg);  // Create a publisher to "/sensors/ADC" topic
 
 /* Subscriber Callback */
-void messagePWM( const differential_drive::PWM &cmd_msg){
+void messagePWM( const differential_drive::Speed &cmd_msg){
   /* store the time for Watchdog */
   wdtime = millis() ;  
   
@@ -112,8 +117,11 @@ void messagePWM( const differential_drive::PWM &cmd_msg){
   p.publish(&imlost);
   
   /* get the speed from message and apply it */
-  MotorA.Set_speed(cmd_msg.PWM1);
-  MotorB.Set_speed(cmd_msg.PWM2);
+  W1_cons = K_W * cmd_msg.W1;
+  W2_cons = K_W * cmd_msg.W2;
+  
+  MotorA.Set_speed(W1_cons);
+  MotorB.Set_speed(W2_cons);
   
   if(cpt<10)  {cpt++;}
   else  {
@@ -132,7 +140,7 @@ void messageServo(const differential_drive::Servomotors& params)  {
 }
 
 /* Create Subscriber to "/motion/Speed" topic. Callback function is messageSpeed */
-ros::Subscriber<differential_drive::PWM> subPWM("/motion/Speed", &messagePWM);
+ros::Subscriber<differential_drive::Speed> subPWM("/motion/Speed", &messagePWM);
 
 /* Create Subscriber to "/actuator/Servo" topic. Callback function is messageServo */
 ros::Subscriber<differential_drive::Servomotors> subServo("/actuator/Servo", &messageServo);
@@ -259,9 +267,9 @@ void loop()  {
       low_batt = false;
     }
     
-    if(low_batt)  {
-      tone(7,440,500); 
-    }
+    //if(low_batt)  {
+      //tone(7,440,500); 
+    //}
 
     t = millis();
 

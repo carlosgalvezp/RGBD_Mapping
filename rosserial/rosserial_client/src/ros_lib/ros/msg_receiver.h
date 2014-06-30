@@ -32,49 +32,22 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef ROS_SERVICE_SERVER_H_
-#define ROS_SERVICE_SERVER_H_
-
-#include "rosserial_msgs/TopicInfo.h"
-#include "node_output.h"
+#ifndef ROS_MSG_RECEIVER_H_
+#define ROS_MSG_RECEIVER_H_
 
 namespace ros {
 
-  template<typename SrvRequest , typename SrvResponse>
-  class ServiceServer : MsgReceiver{
+  /* Base class for objects recieving messages (Services and Subscribers) */
+  class MsgReceiver
+  {
     public:
-      typedef void(*CallbackT)(const SrvRequest&,  SrvResponse&);
+      virtual void receive(unsigned char *data)=0;
 
-      ServiceServer(const char* topic_name, CallbackT cb){
-        this->topic_ = topic_name;
-        this->cb_ = cb;
-      }
-
-      ServiceServer(ServiceServer& srv){
-        this->topic_ = srv.topic_;
-        this->cb_ = srv.cb_;
-      }
-
-      virtual void receive(unsigned char * data){
-        req.deserialize(data);
-        this->cb_(req, resp);
-        no_->publish(id_, &resp);
-      }
-
-      virtual int _getType(){
-        return rosserial_msgs::TopicInfo::ID_SERVICE_SERVER;
-      }
-     
-      virtual const char * getMsgType(){
-        return req.getType();
-      }
-
-      SrvRequest req;
-      SrvResponse resp;
-      NodeOutput_ * no_;
-
-    private:
-      CallbackT cb_;
+      //Distinguishes between different receiver types
+      virtual int _getType()=0;
+      virtual const char * getMsgType()=0;
+      int id_;
+      const char * topic_;
   };
 
 }

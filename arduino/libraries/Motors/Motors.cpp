@@ -48,18 +48,21 @@ Motors::~Motors(void) {}
  * 	
  */
 int Motors::Set_speed(int u)	{	
-	digitalWrite(_cfb_pin, LOW);  // No brake
-	if (u<0)  {
+    digitalWrite(_brk_pin, LOW);  // No brake
+
+    if (u<0)  {
 		//if(u>-40)	{u=0;}
     		digitalWrite(_dir_pin, LOW);
     		analogWrite(_pwm_pin,-u);
+            digitalWrite(44,HIGH);
+
   	}
   	else {
 		//if(u<40)	{u=0;}
     		digitalWrite(_dir_pin, HIGH);
     		analogWrite(_pwm_pin,u);
  	 }
-	return 0;
+    return 0;
 }
 
 /*

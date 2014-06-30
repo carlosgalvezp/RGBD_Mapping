@@ -30,7 +30,7 @@ void setup()
   pinMode(button_pin, INPUT);
   
   //Enable the pullup resistor on the button
-  digitalWrite(button_pin, HIGH);
+  PORTD |= (1<<PD7);
   
   //The button is a normally button
   last_reading = ! digitalRead(button_pin);

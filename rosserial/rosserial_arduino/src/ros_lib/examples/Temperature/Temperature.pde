@@ -9,6 +9,7 @@
  * http://wiring.org.co/learning/libraries/tmp102sparkfun.html
  */
 
+#include <WProgram.h>
 #include <Wire.h>
 #include <ros.h>
 #include <std_msgs/Float32.h>
@@ -56,8 +57,8 @@ void loop()
       byte lsb;
       int temperature;
       
-      msb = Wire.read();  // receive high byte (full degrees)
-      lsb = Wire.read();  // receive low byte (fraction degrees) 
+      msb = Wire.receive();  // receive high byte (full degrees)
+      lsb = Wire.receive();  // receive low byte (fraction degrees) 
       temperature = ((msb) << 4);  // MSB
       temperature |= (lsb >> 4);   // LSB
 

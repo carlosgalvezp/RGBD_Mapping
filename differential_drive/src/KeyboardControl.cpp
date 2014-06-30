@@ -75,10 +75,8 @@ void receive_key(const KeyEvent::ConstPtr &msg)
 	if (right < -1) right = -1;
 	if (right > 1)  right = 1;
 
-	speed_msg.W1	= 1./r*V_max*right;
-	speed_msg.W2	= 1./r*V_max*left;
-	
-	
+    speed_msg.W1	= 1./r*V_max*left;
+    speed_msg.W2	= 1./r*V_max*right;
 
 	printf("left: %f right: %f\n", speed_msg.W1, speed_msg.W2);
 }
