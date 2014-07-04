@@ -5,6 +5,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "ros/msg.h"
+#include "std_msgs/char.h"
 
 namespace std_msgs
 {
@@ -12,21 +13,19 @@ namespace std_msgs
   class Char : public ros::Msg
   {
     public:
-      uint8_t data;
+      std_msgs::char data;
 
     virtual int serialize(unsigned char *outbuffer) const
     {
       int offset = 0;
-      *(outbuffer + offset + 0) = (this->data >> (8 * 0)) & 0xFF;
-      offset += sizeof(this->data);
+      offset += this->data.serialize(outbuffer + offset);
       return offset;
     }
 
     virtual int deserialize(unsigned char *inbuffer)
     {
       int offset = 0;
-      this->data =  ((uint8_t) (*(inbuffer + offset)));
-      offset += sizeof(this->data);
+      offset += this->data.deserialize(inbuffer + offset);
      return offset;
     }
 

@@ -10,6 +10,7 @@
 
 #include "ros/ros.h"
 #include "differential_drive/Speed.h"
+#include "differential_drive/Lights.h"
 
 #include "differential_drive/KeyEvent.h"
 #include "differential_drive/MouseEvent.h"
@@ -31,12 +32,15 @@ const float V_max = r*6.;
 
 bool redraw = true;
 
-
+bool on = false;
+bool released = true;
 
 differential_drive::Speed speed_msg;
+differential_drive::Lights lights_msg;
 
 ros::Subscriber key_sub;
 ros::Publisher send_speed;
+ros::Publisher send_lights;
 
 struct KeyboardState
 {
@@ -59,16 +63,30 @@ struct KeyboardState
 void receive_key(const KeyEvent::ConstPtr &msg)
 {
 	static KeyboardState keys;
-	switch (msg->sym) {
-	case SDLK_UP: keys.up = msg->pressed; break;
-	case SDLK_DOWN: keys.down = msg->pressed; break;
-	case SDLK_LEFT: keys.left = msg->pressed; break;
-	case SDLK_RIGHT: keys.right = msg->pressed; break;
+    switch (msg->sym)
+    {
+        case SDLK_UP: keys.up = msg->pressed; break;
+        case SDLK_DOWN: keys.down = msg->pressed; break;
+        case SDLK_LEFT: keys.left = msg->pressed; break;
+        case SDLK_RIGHT: keys.right = msg->pressed; break;
+        case SDLK_l:
+            if (msg->pressed)
+            {
+                if (released)
+                {
+                    on = !on;
+                    released =false;
+                }
+            }
+            else{
+                released = true;
+            }
+            break;
 	}
 
 	// Calculate motor speeds
-	float right = (keys.up-keys.down)*0.75 + (-keys.left+keys.right)*0.5;
-	float left = (keys.up-keys.down)*0.75 - (-keys.left+keys.right)*0.5;
+    float right = (keys.up-keys.down)*0.75 + (-keys.left+keys.right)*0.75; // * 0.5
+    float left = (keys.up-keys.down)*0.75 - (-keys.left+keys.right)*0.75;  // * 0.5
 
 	if (left < -1) left = -1;
 	if (left > 1)  left = 1;
@@ -79,6 +97,9 @@ void receive_key(const KeyEvent::ConstPtr &msg)
     speed_msg.W2	= 1./r*V_max*right;
 
 	printf("left: %f right: %f\n", speed_msg.W1, speed_msg.W2);
+
+    lights_msg.on = on;
+    printf("Lights on: %u \n",on);
 }
 
 
@@ -91,13 +112,18 @@ int main(int argc, char **argv)
 	key_sub = n.subscribe("/human/keyboard", 1000, receive_key); //when "/keyboard" topic is received, call back receive_key function
 	
 	send_speed = n.advertise<differential_drive::Speed>("/motion/Speed", 1000);
-	
+    send_lights = n.advertise<differential_drive::Lights>("/control/Lights", 1000);
+
 	ros::Rate loop_rate(100);
 	while(ros::ok())
 	{
 		loop_rate.sleep(); // Sleep for 10 ms
-		speed_msg.header.stamp.nsec = ros::Time::now().nsec;
+//        uint32_t t =
+        speed_msg.header.stamp.nsec = ros::Time::now().nsec;
+        lights_msg.header.stamp.nsec = ros::Time::now().nsec;
+
 		send_speed.publish(speed_msg);
+        send_lights.publish(lights_msg);
 		ros::spinOnce();   // Process ros messages	
 	}
 

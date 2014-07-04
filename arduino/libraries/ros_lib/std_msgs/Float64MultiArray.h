@@ -27,7 +27,7 @@ namespace std_msgs
       *(outbuffer + offset++) = 0;
       *(outbuffer + offset++) = 0;
       for( uint8_t i = 0; i < data_length; i++){
-      int32_t * val_datai = (int32_t *) &(this->data[i]);
+      int32_t * val_datai = (long *) &(this->data[i]);
       int32_t exp_datai = (((*val_datai)>>23)&255);
       if(exp_datai != 0)
         exp_datai += 1023-127;

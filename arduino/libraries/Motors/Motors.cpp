@@ -54,8 +54,6 @@ int Motors::Set_speed(int u)	{
 		//if(u>-40)	{u=0;}
     		digitalWrite(_dir_pin, LOW);
     		analogWrite(_pwm_pin,-u);
-            digitalWrite(44,HIGH);
-
   	}
   	else {
 		//if(u<40)	{u=0;}

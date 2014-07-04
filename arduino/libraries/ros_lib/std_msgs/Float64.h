@@ -17,7 +17,7 @@ namespace std_msgs
     virtual int serialize(unsigned char *outbuffer) const
     {
       int offset = 0;
-      int32_t * val_data = (int32_t *) &(this->data);
+      int32_t * val_data = (long *) &(this->data);
       int32_t exp_data = (((*val_data)>>23)&255);
       if(exp_data != 0)
         exp_data += 1023-127;

@@ -20,7 +20,7 @@ namespace differential_drive
     virtual int serialize(unsigned char *outbuffer) const
     {
       int offset = 0;
-      int32_t * val_timestamp = (int32_t *) &(this->timestamp);
+      int32_t * val_timestamp = (long *) &(this->timestamp);
       int32_t exp_timestamp = (((*val_timestamp)>>23)&255);
       if(exp_timestamp != 0)
         exp_timestamp += 1023-127;
@@ -39,11 +39,11 @@ namespace differential_drive
       offset += sizeof(this->sym);
       *(outbuffer + offset + 0) = (this->pressed >> (8 * 0)) & 0xFF;
       offset += sizeof(this->pressed);
-      uint32_t length_name = strlen( (const char*) this->name);
-      memcpy(outbuffer + offset, &length_name, sizeof(uint32_t));
+      uint32_t * length_name = (uint32_t *)(outbuffer + offset);
+      *length_name = strlen( (const char*) this->name);
       offset += 4;
-      memcpy(outbuffer + offset, this->name, length_name);
-      offset += length_name;
+      memcpy(outbuffer + offset, this->name, *length_name);
+      offset += *length_name;
       return offset;
     }
 
@@ -66,8 +66,7 @@ namespace differential_drive
       offset += sizeof(this->sym);
       this->pressed =  ((uint8_t) (*(inbuffer + offset)));
       offset += sizeof(this->pressed);
-      uint32_t length_name;
-      memcpy(&length_name, (inbuffer + offset), sizeof(uint32_t));
+      uint32_t length_name = *(uint32_t *)(inbuffer + offset);
       offset += 4;
       for(unsigned int k= offset; k< offset+length_name; ++k){
           inbuffer[k-1]=inbuffer[k];

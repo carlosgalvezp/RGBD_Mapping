@@ -21,7 +21,7 @@ namespace differential_drive
     virtual int serialize(unsigned char *outbuffer) const
     {
       int offset = 0;
-      int32_t * val_timestamp = (int32_t *) &(this->timestamp);
+      int32_t * val_timestamp = (long *) &(this->timestamp);
       int32_t exp_timestamp = (((*val_timestamp)>>23)&255);
       if(exp_timestamp != 0)
         exp_timestamp += 1023-127;

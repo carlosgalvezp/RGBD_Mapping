@@ -1,4 +1,3 @@
-
 /*
  *
  * KTH_Robot13_openLoop.ino
@@ -30,6 +29,7 @@
 #include <differential_drive/Encoders.h>
 #include <differential_drive/AnalogC.h>
 #include <differential_drive/Servomotors.h>
+#include <differential_drive/Lights.h>
 
 #include <Motors.h>
 #include <math.h>
@@ -54,6 +54,8 @@
 
 #define ChB_Encoder1 18
 #define ChB_Encoder2 19
+
+#define Lights_Pin 44
 
 /* Battery monitoring const */
 #define seuil_cell 3.6
@@ -133,6 +135,19 @@ void messagePWM( const differential_drive::Speed &cmd_msg){
   encoder2_old = encoder2_loc ; 
 }
 
+void messageLights(const differential_drive::Lights &cmd_msg){
+  if (cmd_msg.on)
+  {
+    digitalWrite(Lights_Pin, HIGH);
+  }
+  else
+  {
+    digitalWrite(Lights_Pin, LOW);
+  }
+  
+}
+
+
 void messageServo(const differential_drive::Servomotors& params)  {
   for(int i=0;i<8;i++) {
            servo[i].write(params.servoangle[i]);
@@ -144,6 +159,9 @@ ros::Subscriber<differential_drive::Speed> subPWM("/motion/Speed", &messagePWM);
 
 /* Create Subscriber to "/actuator/Servo" topic. Callback function is messageServo */
 ros::Subscriber<differential_drive::Servomotors> subServo("/actuator/Servo", &messageServo);
+
+/* Create Subscriber to "/control/Lights" topic. Callback function is messageLights*/
+ros::Subscriber<differential_drive::Lights> subLights("/control/Lights", &messageLights);
 
 void hello_world()  {
   for(int m=0;m<6;m++)  {
@@ -200,6 +218,7 @@ void setup()  {
          
          nh.subscribe(subPWM);  // Subscribe 
          nh.subscribe(subServo);  // Subscribe 
+         nh.subscribe(subLights); //Subscribe
          
          /* Advertise booting */
          hello_world();
@@ -267,9 +286,9 @@ void loop()  {
       low_batt = false;
     }
     
-    //if(low_batt)  {
-      //tone(7,440,500); 
-    //}
+    if(low_batt)  {
+      tone(7,440,500); 
+    }
 
     t = millis();
 

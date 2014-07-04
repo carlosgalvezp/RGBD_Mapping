@@ -18,24 +18,23 @@ namespace roscpp
     virtual int serialize(unsigned char *outbuffer) const
     {
       int offset = 0;
-      uint32_t length_name = strlen( (const char*) this->name);
-      memcpy(outbuffer + offset, &length_name, sizeof(uint32_t));
+      uint32_t * length_name = (uint32_t *)(outbuffer + offset);
+      *length_name = strlen( (const char*) this->name);
       offset += 4;
-      memcpy(outbuffer + offset, this->name, length_name);
-      offset += length_name;
-      uint32_t length_level = strlen( (const char*) this->level);
-      memcpy(outbuffer + offset, &length_level, sizeof(uint32_t));
+      memcpy(outbuffer + offset, this->name, *length_name);
+      offset += *length_name;
+      uint32_t * length_level = (uint32_t *)(outbuffer + offset);
+      *length_level = strlen( (const char*) this->level);
       offset += 4;
-      memcpy(outbuffer + offset, this->level, length_level);
-      offset += length_level;
+      memcpy(outbuffer + offset, this->level, *length_level);
+      offset += *length_level;
       return offset;
     }
 
     virtual int deserialize(unsigned char *inbuffer)
     {
       int offset = 0;
-      uint32_t length_name;
-      memcpy(&length_name, (inbuffer + offset), sizeof(uint32_t));
+      uint32_t length_name = *(uint32_t *)(inbuffer + offset);
       offset += 4;
       for(unsigned int k= offset; k< offset+length_name; ++k){
           inbuffer[k-1]=inbuffer[k];
@@ -43,8 +42,7 @@ namespace roscpp
       inbuffer[offset+length_name-1]=0;
       this->name = (char *)(inbuffer + offset-1);
       offset += length_name;
-      uint32_t length_level;
-      memcpy(&length_level, (inbuffer + offset), sizeof(uint32_t));
+      uint32_t length_level = *(uint32_t *)(inbuffer + offset);
       offset += 4;
       for(unsigned int k= offset; k< offset+length_level; ++k){
           inbuffer[k-1]=inbuffer[k];

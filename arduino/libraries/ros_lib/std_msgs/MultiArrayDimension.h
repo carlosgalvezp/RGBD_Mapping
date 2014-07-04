@@ -19,11 +19,11 @@ namespace std_msgs
     virtual int serialize(unsigned char *outbuffer) const
     {
       int offset = 0;
-      uint32_t length_label = strlen( (const char*) this->label);
-      memcpy(outbuffer + offset, &length_label, sizeof(uint32_t));
+      uint32_t * length_label = (uint32_t *)(outbuffer + offset);
+      *length_label = strlen( (const char*) this->label);
       offset += 4;
-      memcpy(outbuffer + offset, this->label, length_label);
-      offset += length_label;
+      memcpy(outbuffer + offset, this->label, *length_label);
+      offset += *length_label;
       *(outbuffer + offset + 0) = (this->size >> (8 * 0)) & 0xFF;
       *(outbuffer + offset + 1) = (this->size >> (8 * 1)) & 0xFF;
       *(outbuffer + offset + 2) = (this->size >> (8 * 2)) & 0xFF;
@@ -40,8 +40,7 @@ namespace std_msgs
     virtual int deserialize(unsigned char *inbuffer)
     {
       int offset = 0;
-      uint32_t length_label;
-      memcpy(&length_label, (inbuffer + offset), sizeof(uint32_t));
+      uint32_t length_label = *(uint32_t *)(inbuffer + offset);
       offset += 4;
       for(unsigned int k= offset; k< offset+length_label; ++k){
           inbuffer[k-1]=inbuffer[k];

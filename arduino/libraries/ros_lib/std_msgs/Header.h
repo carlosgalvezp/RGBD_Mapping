@@ -35,11 +35,11 @@ namespace std_msgs
       *(outbuffer + offset + 2) = (this->stamp.nsec >> (8 * 2)) & 0xFF;
       *(outbuffer + offset + 3) = (this->stamp.nsec >> (8 * 3)) & 0xFF;
       offset += sizeof(this->stamp.nsec);
-      uint32_t length_frame_id = strlen( (const char*) this->frame_id);
-      memcpy(outbuffer + offset, &length_frame_id, sizeof(uint32_t));
+      uint32_t * length_frame_id = (uint32_t *)(outbuffer + offset);
+      *length_frame_id = strlen( (const char*) this->frame_id);
       offset += 4;
-      memcpy(outbuffer + offset, this->frame_id, length_frame_id);
-      offset += length_frame_id;
+      memcpy(outbuffer + offset, this->frame_id, *length_frame_id);
+      offset += *length_frame_id;
       return offset;
     }
 
@@ -61,8 +61,7 @@ namespace std_msgs
       this->stamp.nsec |= ((uint32_t) (*(inbuffer + offset + 2))) << (8 * 2);
       this->stamp.nsec |= ((uint32_t) (*(inbuffer + offset + 3))) << (8 * 3);
       offset += sizeof(this->stamp.nsec);
-      uint32_t length_frame_id;
-      memcpy(&length_frame_id, (inbuffer + offset), sizeof(uint32_t));
+      uint32_t length_frame_id = *(uint32_t *)(inbuffer + offset);
       offset += 4;
       for(unsigned int k= offset; k< offset+length_frame_id; ++k){
           inbuffer[k-1]=inbuffer[k];

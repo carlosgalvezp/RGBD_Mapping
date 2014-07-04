@@ -5,6 +5,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "ros/msg.h"
+#include "std_msgs/byte.h"
 
 namespace std_msgs
 {
@@ -12,32 +13,19 @@ namespace std_msgs
   class Byte : public ros::Msg
   {
     public:
-      int8_t data;
+      std_msgs::byte data;
 
     virtual int serialize(unsigned char *outbuffer) const
     {
       int offset = 0;
-      union {
-        int8_t real;
-        uint8_t base;
-      } u_data;
-      u_data.real = this->data;
-      *(outbuffer + offset + 0) = (u_data.base >> (8 * 0)) & 0xFF;
-      offset += sizeof(this->data);
+      offset += this->data.serialize(outbuffer + offset);
       return offset;
     }
 
     virtual int deserialize(unsigned char *inbuffer)
     {
       int offset = 0;
-      union {
-        int8_t real;
-        uint8_t base;
-      } u_data;
-      u_data.base = 0;
-      u_data.base |= ((uint8_t) (*(inbuffer + offset + 0))) << (8 * 0);
-      this->data = u_data.real;
-      offset += sizeof(this->data);
+      offset += this->data.deserialize(inbuffer + offset);
      return offset;
     }
 
