@@ -103,6 +103,8 @@ class RGBDImageProc
     // *****************************************
     void GetRelativePoseCameras();
     void MergeMaps();
+    void rotateImage(cv::InputArray src, double angle, cv::OutputArray dst);
+
     void ICPRegistration_Basic(const PointCloudT::Ptr map1,
                                const PointCloudT::Ptr map2,
                                const bool iterative,

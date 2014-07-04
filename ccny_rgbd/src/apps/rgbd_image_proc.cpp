@@ -122,7 +122,7 @@ void RGBDImageProc::GetRelativePoseCameras(){
     PointCloudT::Ptr combinedMap (new PointCloudT);
     Eigen::Matrix4f matrix;
 
-    if (pcl::io::loadPCDFile("/home/robo/map1Objects_0001.pcd", *map1) == -1) //* load the file
+    if (pcl::io::loadPCDFile("/home/carlos/map1_001.pcd", *map1) == -1) //* load the file
     {
       PCL_ERROR ("Couldn't read file map1.pcd \n");
     }
@@ -147,7 +147,7 @@ void RGBDImageProc::GetRelativePoseCameras(){
 
     //**** Save into file
     ROS_INFO("Saving combined map");
-    pcl::io::savePCDFile ("/home/robo/calibrationMap.pcd",finalMap, true);
+    pcl::io::savePCDFile ("/home/carlos/calibrationMap.pcd",finalMap, true);
 
     //**** Print transformation
     printf ("Rotation matrix :\n");
@@ -196,7 +196,7 @@ void RGBDImageProc::MergeMaps(){
 
     //**** Read transformation matrix
     ifstream myfile;
-    myfile.open ("/home/robo/transformation.txt");
+    myfile.open ("/home/carlos/transformation.txt");
     for(int i=0;i<4;i++){
         for(int j=0;j<4;j++){
             myfile>>matrix(i,j);
@@ -686,10 +686,20 @@ void RGBDImageProc::RGBDCallback(
   
   // Convert BGR image to RGB for displaying purposes
   cv::cvtColor(rgb_img,rgb_img,CV_BGR2RGB);
+
+  // Rotate cam 2
+  if(cam_name_.compare("cam2") == 0)
+  {
+      rotateImage(rgb_img, 180., rgb_img);
+      rotateImage(depth_img, 180., depth_img);
+  }
+
   cv::imshow("RGB_" + cam_name_, rgb_img);
 //  cv::imshow("Depth", depth_img);
   cv::waitKey(1);
   
+
+
   // **** rectify
   ros::WallTime start_rectify = ros::WallTime::now();
   cv::Mat rgb_img_rect, depth_img_rect;
@@ -786,6 +796,16 @@ void RGBDImageProc::reconfigCallback(ProcConfig& config, uint32_t level)
   size_in_ = cv::Size(0,0); // force a reinitialization on the next image callback
   ROS_INFO("Resampling scale set to %.2f", scale_);
 
+}
+
+
+// *****
+void RGBDImageProc::rotateImage(cv::InputArray src, double angle, cv::OutputArray dst)
+{
+    cv::Mat srcMat = src.getMat();
+    cv::Point2f pt(srcMat.cols/2., srcMat.rows/2.);
+    cv::Mat r = cv::getRotationMatrix2D(pt, angle, 1.0);
+    cv::warpAffine(src, dst, r, cv::Size(srcMat.cols, srcMat.rows));
 }
 
 } //namespace ccny_rgbd
