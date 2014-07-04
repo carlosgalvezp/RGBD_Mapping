@@ -13,6 +13,8 @@
 
   <arg name="device_id"/>
   <arg name="calibrate"/>
+  <arg name="record_only"/>
+  <arg name="offline"/>
   # modes: 
   #             2 (640x480 VGA 30Hz)
   #             5 (320x240 QVGA 30Hz)
@@ -24,6 +26,7 @@
 
   <!-- Driver nodelet -->      
   <!--<include file="$(find ccny_openni_launch)/launch/include/device.launch">       -->
+<group unless="$(arg offline)">
   <include file="$(find ccny_openni_launch)/launch/include/device_modified.launch">
      <arg name="manager_name" value="$(arg manager_name)" />
      <arg name="calib_path"   value="$(arg calib_path)" />
@@ -31,8 +34,10 @@
      <arg name="depth_mode" value="$(arg depth_mode)" />
      <arg name="device_id" value="$(arg device_id)" />
   </include>
+</group>
             
   <!-- RGBD processing -->
+<group unless="$(arg record_only)">
   <include file="$(find ccny_openni_launch)/launch/include/proc.launch">       
      <arg name="manager_name"  value="$(arg manager_name)" />
      <arg name="calib_path"    value="$(arg calib_path)" />
@@ -43,6 +48,6 @@
      <arg name="cam_name" value="cam$(arg device_id)"/> 
      <arg name="calibrate" value="$(arg calibrate)"/>
   </include>
-
+</group>
 
 </launch>

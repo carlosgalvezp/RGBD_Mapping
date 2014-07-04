@@ -1,0 +1,5 @@
+# record data
+
+rosbag record /cam1/camera/rgb/image /cam1/camera/rgb/camera_info /cam1/camera/depth/image_raw /cam1/camera/depth/camera_info /tf
+
+

@@ -2,17 +2,23 @@
 <launch> 
 
 <arg name="map_resolution" default="0.01"/>
+<arg name="record_only" default="false"/>
+<arg name="offline" default="false"/>
 
 <!-- First camera -->
 <include file="$(find ccny_openni_launch)/launch/single_camera.launch">
 	<arg name="cam_id"  value="1" />
 	<arg name="map_resolution" value="$(arg map_resolution)"/>
+	<arg name="record_only" value="$(arg record_only)"/>
+	<arg name="offline" value="$(arg offline)"/>
 </include>
 
 <!-- Second camera  -->
 <include file="$(find ccny_openni_launch)/launch/single_camera.launch">
 	<arg name="cam_id"  value="2" />
 	<arg name="map_resolution" value="$(arg map_resolution)"/>
+	<arg name="record_only" value="$(arg record_only)"/>
+	<arg name="offline" value="$(arg offline)"/>
 </include>
 
   <!-- static transforms-->

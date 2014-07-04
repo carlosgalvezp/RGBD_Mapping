@@ -4,6 +4,8 @@
 <arg name="cam_id" default="1" />
 <arg name="calibrate" default="false"/>
 <arg name="map_resolution" default="0.01"/>
+<arg name="record_only" default="false"/>
+<arg name="offline" default="false"/>
 
 <group ns="cam$(arg cam_id)" >
 	<!-- Openni Driver and RGBD processing -->
@@ -11,6 +13,8 @@
 		<arg name="publish_cloud"  value="true" />
 		<arg name="device_id" value="$(arg cam_id)" />
 		<arg name="calibrate" value="$(arg calibrate)"/>
+		<arg name="record_only" value="$(arg record_only)"/>
+		<arg name="offline" value="$(arg offline)"/>
 	</include>
 		    
 	<!-- Visual odometry 
@@ -18,10 +22,12 @@
 		<arg name="cam_name" value="cam$(arg cam_id)" />     		
 	</include> -->
 	<!-- Visual odometry and mapping-->
+<group unless="$(arg record_only)">
 	<include file="$(find ccny_rgbd)/launch/vo+mapping.launch">  
 		<arg name="cam_name" value="cam$(arg cam_id)" />     
 		<arg name="map_resolution" value="$(arg map_resolution)"/>		
 	</include> 
+</group>
 
 </group>
       
