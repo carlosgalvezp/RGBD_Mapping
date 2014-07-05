@@ -1,0 +1,32 @@
+<!-- Launch OpenNI driver and record the data -->
+<launch>
+
+  <!-- Parameters -->
+  <arg name="bag_name" />
+  <arg name="manager_name" default="rgbd_manager"/>
+  <arg name="calib_path" default="$(find ccny_rgbd_data)/calibration_openni_default"/> 
+  <arg name="twoCams" default="false"/>
+  
+  <!-- Load first camera -->
+  <include file="$(find ccny_openni_launch)/launch/single_camera.launch">
+		<arg name="cam_id"  value="1" />
+		<arg name="record_only" value="true" />
+  </include>
+
+  <!-- Optionally, load the second camera -->
+  <group if="$(arg twoCams)">
+	<include file="$(find ccny_openni_launch)/launch/single_camera.launch">
+		<arg name="cam_id"  value="2" />
+		<arg name="record_only" value="true" />
+  	</include>
+  </group>
+
+  <!-- Launch webcam -->
+  <include file="$(find ccny_openni_launch)/launch/webcam.launch"/>       
+
+  <!-- RGBD recording -->
+  <include file="$(find ccny_openni_launch)/launch/include/record_modified.launch">       
+     <arg name="bag_name" value="$(arg bag_name)" />
+  </include>
+
+</launch>
