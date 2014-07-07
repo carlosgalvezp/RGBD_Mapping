@@ -24,11 +24,10 @@
 #include <iostream>
 
 using namespace differential_drive;
-const float r = 36E-3;
-const float B = 186E-3;
+const float r = 48E-3; // wheel radius [m]
+const float B = 232E-3;// baseline [m]
 
-const float A_max = r*3.;
-const float V_max = r*6.;
+const float V_max = 0.5f; // max linear speed (m/s)
 
 bool redraw = true;
 
@@ -85,18 +84,18 @@ void receive_key(const KeyEvent::ConstPtr &msg)
 	}
 
 	// Calculate motor speeds
-    float right = (keys.up-keys.down)*0.75 + (-keys.left+keys.right)*0.75; // * 0.5
-    float left = (keys.up-keys.down)*0.75 - (-keys.left+keys.right)*0.75;  // * 0.5
+    float right = (keys.up-keys.down)*0.75 - (-keys.left+keys.right)*0.75; // * 0.5
+    float left = (keys.up-keys.down)*0.75 + (-keys.left+keys.right)*0.75;  // * 0.5
 
 	if (left < -1) left = -1;
 	if (left > 1)  left = 1;
 	if (right < -1) right = -1;
 	if (right > 1)  right = 1;
 
-    speed_msg.W1	= 1./r*V_max*left;
-    speed_msg.W2	= 1./r*V_max*right;
+    speed_msg.W2	= 1./r*V_max*left;
+    speed_msg.W1	= 1./r*V_max*right;
 
-	printf("left: %f right: %f\n", speed_msg.W1, speed_msg.W2);
+    printf("left: %f right: %f\n", speed_msg.W2, speed_msg.W1);
 
     lights_msg.on = on;
     printf("Lights on: %u \n",on);

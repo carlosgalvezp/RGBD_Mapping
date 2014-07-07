@@ -22,7 +22,9 @@
   </group>
 
   <!-- Launch webcam -->
-  <include file="$(find ccny_openni_launch)/launch/webcam.launch"/>       
+  <include file="$(find ccny_openni_launch)/launch/webcam.launch">       
+	<arg name="view" value="false"/>
+  </include>
 
   <!-- RGBD recording -->
   <include file="$(find ccny_openni_launch)/launch/include/record_modified.launch">       

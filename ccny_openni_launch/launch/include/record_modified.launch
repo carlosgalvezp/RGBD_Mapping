@@ -5,13 +5,14 @@
 
   <node pkg="rosbag" type="record" name="record" output="screen"
     args="/cam1/camera/depth/camera_info 
-          /cam1/camera/depth/image_raw 
+          /cam1/camera/depth/image_raw/compressed 
           /cam1/camera/rgb/camera_info 
-          /cam1/camera/rgb/image
+          /cam1/camera/rgb/image/compressed
 	  /cam2/camera/depth/camera_info 
           /cam2/camera/depth/image_raw 
           /cam2/camera/rgb/camera_info 
           /cam2/camera/rgb/image
- 	  /usb_cam/image_raw
+	  /usb_cam/image_raw
+	  /usb_cam/camera_info
           -O $(arg bag_name)"/>
 </launch>

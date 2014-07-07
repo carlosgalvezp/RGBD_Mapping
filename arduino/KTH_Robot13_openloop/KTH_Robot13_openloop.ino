@@ -122,8 +122,8 @@ void messagePWM( const differential_drive::Speed &cmd_msg){
   W1_cons = K_W * cmd_msg.W1;
   W2_cons = K_W * cmd_msg.W2;
   
-  MotorA.Set_speed(W1_cons);
-  MotorB.Set_speed(W2_cons);
+  MotorA.Set_speed(50);
+  //MotorB.Set_speed(50);
   
   if(cpt<10)  {cpt++;}
   else  {
@@ -136,15 +136,7 @@ void messagePWM( const differential_drive::Speed &cmd_msg){
 }
 
 void messageLights(const differential_drive::Lights &cmd_msg){
-  if (cmd_msg.on)
-  {
-    digitalWrite(Lights_Pin, HIGH);
-  }
-  else
-  {
-    digitalWrite(Lights_Pin, LOW);
-  }
-  
+  digitalWrite(Lights_Pin, cmd_msg.on);  
 }
 
 
@@ -287,7 +279,7 @@ void loop()  {
     }
     
     if(low_batt)  {
-      tone(7,440,500); 
+      //tone(7,440,500); 
     }
 
     t = millis();

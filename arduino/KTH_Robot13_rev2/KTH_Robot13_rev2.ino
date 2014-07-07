@@ -31,6 +31,8 @@
 #include <differential_drive/AnalogC.h>
 #include <differential_drive/Params.h>
 #include <differential_drive/Servomotors.h>
+#include <differential_drive/Lights.h>
+
 #include <std_msgs/Header.h>
 
 #include <stdint.h>
@@ -58,6 +60,8 @@
 
 #define ChB_Encoder1 18
 #define ChB_Encoder2 19
+
+#define Lights_Pin 44
 
 #define N 10 // Averaging of measured speed with the N last values
 
@@ -224,8 +228,8 @@ void messageSpeed( const differential_drive::Speed& cmd_msg){
   */
   #endif
   
-  MotorA.Speed_regulation(W1_cons,Te,encoder1_loc,encoder1_old);
-  MotorB.Speed_regulation(-W2_cons,Te,encoder2_loc,encoder2_old);
+  MotorA.Speed_regulation(-W1_cons,Te,encoder1_loc,encoder1_old);
+  MotorB.Speed_regulation(W2_cons,Te,encoder2_loc,encoder2_old);
   
   if(cpt<10)  {cpt++;}
   else  {
@@ -243,6 +247,10 @@ void messageSpeed( const differential_drive::Speed& cmd_msg){
   /* Store encoders value */
   encoder1_old = encoder1_loc ;
   encoder2_old = encoder2_loc ; 
+}
+
+void messageLights(const differential_drive::Lights &cmd_msg){
+  digitalWrite(Lights_Pin, cmd_msg.on);  
 }
 
 void messageParameters(const differential_drive::Params& params)  {
@@ -268,6 +276,9 @@ ros::Subscriber<differential_drive::Servomotors> subServo("/actuator/Servo", &me
 
 /* Create Subscriber to "/motion/Parameters" topic. Callback function is messageParameters */
 ros::Subscriber<differential_drive::Params> subParam("/motion/Parameters", &messageParameters);
+
+/* Create Subscriber to "/control/Lights" topic. Callback function is messageLights*/
+ros::Subscriber<differential_drive::Lights> subLights("/control/Lights", &messageLights);
 
 void hello_world()  {
   for(int m=0;m<6;m++)  {
@@ -325,7 +336,8 @@ void setup()  {
          nh.subscribe(subSpeed);  // Subscribe 
          nh.subscribe(subServo);  // Subscribe 
          nh.subscribe(subParam);  // Subscribe 
-         
+         nh.subscribe(subLights); //Subscribe
+
          /* Advertise booting */
          hello_world();
          
