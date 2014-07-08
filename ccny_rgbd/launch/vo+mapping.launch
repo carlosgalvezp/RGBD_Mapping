@@ -5,6 +5,7 @@
 
   <arg name="cam_name" default="cam1"/>
   <arg name="map_resolution"/>
+  <arg name="calibrate"/>
   #### VISUAL ODOMETRY ####################################
 
   # ORB, SURF, GTF, STAR
@@ -18,6 +19,7 @@
     <arg name="reg_type"      value="$(arg reg_type)"/>
 	
     <arg name="cam_name" value="$(arg cam_name)"/>
+    <arg name="calibrate" value="$(arg calibrate)"/>
   </include>
 
   #### KEYFRAME MAPPING ###################################

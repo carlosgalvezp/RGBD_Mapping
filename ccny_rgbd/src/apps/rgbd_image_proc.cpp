@@ -87,7 +87,7 @@ RGBDImageProc::RGBDImageProc(
   config_server_.setCallback(f);
 
   //******************
-  bool calibrate;
+  bool calibrate = false;
   nh_private_.getParam("calibrate", calibrate);
   if (calibrate){
     GetRelativePoseCameras();

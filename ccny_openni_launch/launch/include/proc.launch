@@ -9,7 +9,7 @@
   <arg name="verbose" /> 
   
   <arg name="cam_name"/>
-  <arg name="calibrate"/>
+
 
   <!-- Debayered images -->
   <node pkg="nodelet" type="nodelet" name="debayer"
@@ -30,7 +30,6 @@
     <param name="verbose" value="$(arg verbose)"/>
 
     <param name="cam_name" value="$(arg cam_name)"/>
-    <param name="calibrate" value="$(arg calibrate)"/>
   </node> 
 
   <!-- static transforms-->

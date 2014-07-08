@@ -149,15 +149,15 @@ void messageSpeed( const differential_drive::Speed& cmd_msg){
   }
   
   /* get the speed from message */
-  W1_cons = cmd_msg.W1 ;
+  W1_cons = -cmd_msg.W1 ;
   W2_cons = cmd_msg.W2 ;
   
   /* Control loop */
-  encoder1_loc = encoder1 ;
-  encoder2_loc = encoder2 ;
+  encoder1_loc = -encoder1 ;
+  encoder2_loc = -encoder2 ;
 
-  imlost.encoder1 = encoder1;
-  imlost.encoder2 = encoder2;
+  imlost.encoder1 = encoder1_loc;
+  imlost.encoder2 = encoder2_loc;
   imlost.delta_encoder1 = encoder1_loc-encoder1_old ;
   imlost.delta_encoder2 = encoder2_loc-encoder2_old ;
   
@@ -168,8 +168,8 @@ void messageSpeed( const differential_drive::Speed& cmd_msg){
   imlost.timestamp = t_enc - t_enc_old ;
   pubEnc.publish(&imlost);
   
-  MotorA.Read_speed(encoder1_loc,encoder1_old,Te);
-  MotorB.Read_speed(encoder2_loc,encoder2_old,Te);
+  MotorA.Read_speed(encoder1_loc,encoder1_old,imlost.timestamp/1000.0);
+  MotorB.Read_speed(encoder2_loc,encoder2_old,imlost.timestamp/1000.0);
   
   /* Compute odometry */
   V_lin = 1.0/2*(r_r*MotorA._speed-r_l*MotorB._speed);
@@ -228,9 +228,10 @@ void messageSpeed( const differential_drive::Speed& cmd_msg){
   */
   #endif
   
-  MotorA.Speed_regulation(-W1_cons,Te,encoder1_loc,encoder1_old);
-  MotorB.Speed_regulation(W2_cons,Te,encoder2_loc,encoder2_old);
-  
+  MotorA.Speed_regulation(W1_cons,imlost.timestamp/1000.0,encoder1_loc,encoder1_old);
+  MotorB.Speed_regulation(W2_cons,imlost.timestamp/1000.0,encoder2_loc,encoder2_old);
+
+
   if(cpt<10)  {cpt++;}
   else  {
     cpt = 0;

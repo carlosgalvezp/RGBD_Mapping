@@ -12,8 +12,8 @@
 		<arg name="cam_id"  value="1" />
 		<arg name="record_only" value="true" />
   </include>
-  <param name="/cam1/camera/rgb/image/compressed/format" value="png"/> <!-- Looseless compression-->
-  <param name="/cam1/camera/depth/image_raw/compressed/format" value="png"/> <!-- Looseless compression-->
+  <param name="/cam1/camera/rgb/image/compressed/format" value="png"/> <!-- Lossless compression-->
+  <param name="/cam1/camera/depth/image_raw/compressed/format" value="png"/> <!-- Lossless compression-->
 
   <!-- Optionally, load the second camera -->
   <group if="$(arg twoCams)">
@@ -21,8 +21,8 @@
 		<arg name="cam_id"  value="2" />
 		<arg name="record_only" value="true" />
   	</include>
- <param name="/cam2/camera/rgb/image/compressed/format" value="png"/> <!-- Looseless compression-->
- <param name="/cam2/camera/depth/image_raw/compressed/format" value="png"/> <!-- Looseless compression-->
+ <param name="/cam2/camera/rgb/image/compressed/format" value="png"/> <!-- Lossless compression-->
+ <param name="/cam2/camera/depth/image_raw/compressed/format" value="png"/> <!-- Lossless compression-->
   </group>
 
   <!-- Launch webcam -->

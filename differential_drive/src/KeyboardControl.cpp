@@ -11,6 +11,7 @@
 #include "ros/ros.h"
 #include "differential_drive/Speed.h"
 #include "differential_drive/Lights.h"
+#include "differential_drive/Encoders.h"
 
 #include "differential_drive/KeyEvent.h"
 #include "differential_drive/MouseEvent.h"
@@ -34,10 +35,15 @@ bool redraw = true;
 bool on = false;
 bool released = true;
 
+float W1_;
+float W2_;
+
 differential_drive::Speed speed_msg;
 differential_drive::Lights lights_msg;
 
 ros::Subscriber key_sub;
+ros::Subscriber enc_sub; //Subscribe to encoders to get velocity
+
 ros::Publisher send_speed;
 ros::Publisher send_lights;
 
@@ -95,12 +101,21 @@ void receive_key(const KeyEvent::ConstPtr &msg)
     speed_msg.W2	= 1./r*V_max*left;
     speed_msg.W1	= 1./r*V_max*right;
 
+    W1_ = speed_msg.W1;
+    W2_ = speed_msg.W2;
+
     printf("left: %f right: %f\n", speed_msg.W2, speed_msg.W1);
 
     lights_msg.on = on;
     printf("Lights on: %u \n",on);
 }
 
+void encodersCallback(const Encoders::ConstPtr &msg)
+{
+    float w1_read = (msg->delta_encoder1)*(2.0f*M_PI/360)/(msg->timestamp/1000.0f);
+    float w2_read = (msg->delta_encoder2)*(2.0f*M_PI/360)/(msg->timestamp/1000.0f);
+    ROS_WARN("W1 read %.3f, W2 read: %.3f",w1_read,w2_read);
+}
 
 int main(int argc, char **argv)
 {
@@ -109,7 +124,8 @@ int main(int argc, char **argv)
 	ros::NodeHandle n;
 
 	key_sub = n.subscribe("/human/keyboard", 1000, receive_key); //when "/keyboard" topic is received, call back receive_key function
-	
+    enc_sub = n.subscribe("/motion/Encoders", 1000, encodersCallback);
+
 	send_speed = n.advertise<differential_drive::Speed>("/motion/Speed", 1000);
     send_lights = n.advertise<differential_drive::Lights>("/control/Lights", 1000);
 

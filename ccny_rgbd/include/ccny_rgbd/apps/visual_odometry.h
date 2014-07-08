@@ -69,6 +69,7 @@ class VisualOdometry
   private:
     // **** My params
     std::string cam_name_;
+    bool calibrate_;
 
     // **** ROS-related
 

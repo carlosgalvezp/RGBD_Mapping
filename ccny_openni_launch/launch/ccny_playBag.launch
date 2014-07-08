@@ -3,6 +3,12 @@
   <param name="use_sim_time" value="true"/> <!-- Required for time sync!-->
   <arg name="bag_name"/>
 
+  <node pkg="image_transport" type="republish" name="p1" args="compressed in:=/cam1/camera/rgb/image raw out:=/cam1/camera/rgb/image"/>
+  <node pkg="image_transport" type="republish" name="p2" args="compressed in:=/cam1/camera/depth/image_raw raw out:=/cam1/camera/depth/image_raw"/>
+  <node pkg="image_transport" type="republish" name="p3" args="compressed in:=/cam2/camera/rgb/image raw out:=/cam2/camera/rgb/image"/>
+  <node pkg="image_transport" type="republish" name="p4" args="compressed in:=/cam2/camera/depth/image_raw raw out:=/cam2/camera/depth/image_raw"/>
+<node pkg="image_transport" type="republish" name="p5" args="compressed in:=/usb_cam/image_raw raw out:=/usb_cam/image_raw"/>
+
   <node pkg="rosbag" type="play" name="play" output="screen"
     args="--clock $(arg bag_name)"/>
 </launch>

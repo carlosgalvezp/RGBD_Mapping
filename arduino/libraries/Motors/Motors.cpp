@@ -75,24 +75,29 @@ int Motors::Set_speed(int u)	{
 
 int Motors::Speed_regulation(float W, float Te, int encoder, int encoder_old) {
 	float u ;
-	_speed_instruction = W ;	
+	_speed_instruction = W;	//W
 	Read_speed(encoder, encoder_old, Te);
+	
 	_error = _speed_instruction - _speed;
 	_int+= _error*Te;
 
 	if(_int>_int_max) {_int = _int_max;}
 	else if(_int<-_int_max)  {_int = -_int_max;}
 
+	_k= 10;
+	_ki = 50;
 	u = _k*_error+_ki*_int;
 	
 	//Threshold	
-	if(u>5)	{u+=35;}
-	else if(u<-5)	{u-=35;}
+	//if(u>5)	{u+=35;}
+	//else if(u<-5)	{u-=35;}
 
 	if(u > 255) {u = 255;}
 	else if(u < -255)  {u = -255;}
 
 	Set_speed(u);
+
+	return _error*1000;
 
 }
 
@@ -108,7 +113,7 @@ int Motors::Speed_regulation(float W, float Te, int encoder, int encoder_old) {
 float Motors::Read_speed(int encoder, int encoder_old, float Te)	{
 	int dp;
 	dp = encoder - encoder_old ;
-	_speed = dp*2.*M_PI/1000./Te;
+	_speed = dp*(2.*M_PI/360)/Te;
 	return _speed;
 }
 

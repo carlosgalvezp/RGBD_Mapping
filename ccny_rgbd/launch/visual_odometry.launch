@@ -5,9 +5,10 @@
   <arg name="cam_name"/>
   # ORB, SURF, GTF, STAR
   <arg name="detector_type" default="GFT"/> 
-
   # ICPProbModel
   <arg name="reg_type" default="ICPProbModel"/> 
+  <arg name="calibrate"/>
+
 
   <node pkg="ccny_rgbd" type="visual_odometry_node" name="visual_odometry_node" 
     output="screen">
@@ -71,6 +72,8 @@
     <param name="reg/ICPProbModel/max_corresp_dist_eucl"     value="0.15"/>
     <param name="reg/ICPProbModel/publish_model_cloud"       value="true"/>
     <param name="reg/ICPProbModel/publish_model_covariances" value="false"/>
+
+    <param name="calibrate" value="$(arg calibrate)"/>
   </node>
 
 </launch>

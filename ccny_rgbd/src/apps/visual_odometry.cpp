@@ -92,6 +92,10 @@ VisualOdometry::~VisualOdometry()
 
 void VisualOdometry::initParams()
 {
+  // ****
+  if (!nh_private_.getParam ("calibrate", calibrate_))
+      calibrate_ = false;
+
   if (!nh_private_.getParam ("publish_tf", publish_tf_))
     publish_tf_ = true;  
   if (!nh_private_.getParam ("publish_path", publish_path_))
@@ -494,10 +498,13 @@ void VisualOdometry::publishModelCloud()
   PointCloudFeature::Ptr model_cloud_ptr = motion_estimation_.getModel();
   model_cloud_ptr->header.frame_id = fixed_frame_;
   // **** Save to disk before publishing
-  // write out
-  pcl::PCDWriter writer;
-  const std::string path = "/home/carlos/"+cam_name_+"_features.pcd";
-  writer.writeBinary<PointFeature>(path, *model_cloud_ptr);
+  // write out features if calibrate
+  if (calibrate_)
+  {
+      pcl::PCDWriter writer;
+      const std::string path = cam_name_+"_features.pcd";
+      writer.writeBinary<PointFeature>(path, *model_cloud_ptr);
+  }
   model_cloud_publisher_.publish(model_cloud_ptr);
 }
 

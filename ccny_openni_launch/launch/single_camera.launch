@@ -12,7 +12,6 @@
 	<include file="$(find ccny_openni_launch)/launch/openni_modified.launch">
 		<arg name="publish_cloud"  value="true" />
 		<arg name="device_id" value="$(arg cam_id)" />
-		<arg name="calibrate" value="$(arg calibrate)"/>
 		<arg name="record_only" value="$(arg record_only)"/>
 		<arg name="offline" value="$(arg offline)"/>
 	</include>
@@ -25,7 +24,8 @@
 <group unless="$(arg record_only)">
 	<include file="$(find ccny_rgbd)/launch/vo+mapping.launch">  
 		<arg name="cam_name" value="cam$(arg cam_id)" />     
-		<arg name="map_resolution" value="$(arg map_resolution)"/>		
+		<arg name="map_resolution" value="$(arg map_resolution)"/>
+		<arg name="calibrate" value="$(arg calibrate)"/>		
 	</include> 
 </group>
 
