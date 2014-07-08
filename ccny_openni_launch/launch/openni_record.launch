@@ -24,6 +24,7 @@
      <arg name="image_mode"   value="$(arg image_mode)" />
      <arg name="depth_mode"   value="$(arg depth_mode)" />
   </include>
+  <param name="use_sim_time" value="true"/> <!-- Required for time sync!-->
             
   <!-- RGBD recording -->
   <include file="$(find ccny_openni_launch)/launch/include/record.launch">       
