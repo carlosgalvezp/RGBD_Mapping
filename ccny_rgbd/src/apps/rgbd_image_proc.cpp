@@ -90,8 +90,18 @@ RGBDImageProc::RGBDImageProc(
   bool calibrate = false;
   nh_private_.getParam("calibrate", calibrate);
   if (calibrate){
-    GetRelativePoseCameras();
-    MergeMaps();
+      ROS_INFO("CALIBRATING...");
+//    GetRelativePoseCameras();
+//    MergeMaps();
+      sub_rgb_.subscribe  (rgb_image_transport_,
+        "/"+cam_name_+"/camera/rgb/imageDecompressed", queue_size_);
+      sub_depth_.subscribe(depth_image_transport_,
+        "/"+cam_name_+"/camera/rgb/image", queue_size_); //16UC1
+
+      sync2_.reset(new RGBDSynchronizer2(
+                    RGBDSyncPolicy2(queue_size_), sub_rgb_, sub_depth_));
+
+      sync2_->registerCallback(boost::bind(&RGBDImageProc::CompressionTestCallback, this, _1, _2));
     return;
   }
 //  //******************
@@ -644,6 +654,24 @@ void RGBDImageProc::initMaps(
   convertMatToCameraInfo(intr_rect_rgb_,   rgb_rect_info_msg_);
   convertMatToCameraInfo(intr_rect_depth_, depth_rect_info_msg_);  
 
+}
+
+void RGBDImageProc::CompressionTestCallback(
+        const ImageMsg::ConstPtr& rgb_msg,
+        const ImageMsg::ConstPtr& depth_msg)
+{
+    ROS_WARN("HELLO");
+    // **** convert ros images to opencv Mat
+    cv_bridge::CvImageConstPtr rgb_ptr   = cv_bridge::toCvShare(rgb_msg);
+    cv_bridge::CvImageConstPtr depth_ptr = cv_bridge::toCvShare(depth_msg);
+
+    const cv::Mat& rgb_img   = rgb_ptr->image;
+    const cv::Mat& depth_img = depth_ptr->image;
+
+    cv::Mat diff = rgb_img - depth_img;
+    cv::imshow("Difference image", diff);
+    std::cout<<"Sum of differences: "<<cv::sum(diff)<<"\n";
+    cv::waitKey(1);
 }
 
 void RGBDImageProc::RGBDCallback(

@@ -28,12 +28,13 @@ using namespace differential_drive;
 const float r = 48E-3; // wheel radius [m]
 const float B = 232E-3;// baseline [m]
 
-const float V_max = 0.5f; // max linear speed (m/s)
+const float V_max = 0.4f; // max linear speed (m/s)
 
 bool redraw = true;
 
 bool on = false;
 bool released = true;
+bool changed = false;
 
 float W1_;
 float W2_;
@@ -80,6 +81,7 @@ void receive_key(const KeyEvent::ConstPtr &msg)
                 if (released)
                 {
                     on = !on;
+                    changed = true;
                     released =false;
                 }
             }
@@ -124,7 +126,7 @@ int main(int argc, char **argv)
 	ros::NodeHandle n;
 
 	key_sub = n.subscribe("/human/keyboard", 1000, receive_key); //when "/keyboard" topic is received, call back receive_key function
-    enc_sub = n.subscribe("/motion/Encoders", 1000, encodersCallback);
+//    enc_sub = n.subscribe("/motion/Encoders", 1000, encodersCallback);
 
 	send_speed = n.advertise<differential_drive::Speed>("/motion/Speed", 1000);
     send_lights = n.advertise<differential_drive::Lights>("/control/Lights", 1000);
@@ -138,7 +140,11 @@ int main(int argc, char **argv)
         lights_msg.header.stamp.nsec = ros::Time::now().nsec;
 
 		send_speed.publish(speed_msg);
-        send_lights.publish(lights_msg);
+//        if(changed)
+//        {
+//            changed = false;
+            send_lights.publish(lights_msg);
+//        }
 		ros::spinOnce();   // Process ros messages	
 	}
 

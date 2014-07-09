@@ -99,6 +99,8 @@ class RGBDImageProc
                       const ImageMsg::ConstPtr& depth_msg,
                       const CameraInfoMsg::ConstPtr& rgb_info_msg,
                       const CameraInfoMsg::ConstPtr& depth_info_msg);
+    void CompressionTestCallback(const ImageMsg::ConstPtr& rgb_msg,
+                                 const ImageMsg::ConstPtr& depth_msg);
 
     // *****************************************
     void GetRelativePoseCameras();
@@ -157,6 +159,8 @@ class RGBDImageProc
     ros::NodeHandle nh_private_;  ///< the private nodehandle
 
     boost::shared_ptr<RGBDSynchronizer4> sync_; ///< ROS 4-topic synchronizer
+    boost::shared_ptr<RGBDSynchronizer2> sync2_; ///< ROS 2-topic synchronizer
+
 
     ImageTransport rgb_image_transport_;    ///< ROS image transport for rgb message
     ImageTransport depth_image_transport_;  ///< ROS image transport for depth message

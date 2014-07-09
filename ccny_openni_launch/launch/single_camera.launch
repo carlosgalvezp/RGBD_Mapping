@@ -14,6 +14,7 @@
 		<arg name="device_id" value="$(arg cam_id)" />
 		<arg name="record_only" value="$(arg record_only)"/>
 		<arg name="offline" value="$(arg offline)"/>
+		<arg name="calibrate" value="$(arg calibrate)"/>		
 	</include>
 		    
 	<!-- Visual odometry 

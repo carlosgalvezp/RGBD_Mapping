@@ -108,6 +108,8 @@ unsigned long wdtime ;
 
 int cpt = 0;
 
+boolean on = false;
+
 /* Specific parameters for NL control */ 
 //#define NLCTRL // comment to use a classic Proportional-Integral *speed* control
 #ifdef NLCTRL
@@ -251,7 +253,7 @@ void messageSpeed( const differential_drive::Speed& cmd_msg){
 }
 
 void messageLights(const differential_drive::Lights &cmd_msg){
-  digitalWrite(Lights_Pin, cmd_msg.on);  
+  on = cmd_msg.on;
 }
 
 void messageParameters(const differential_drive::Params& params)  {
@@ -413,6 +415,8 @@ void loop()  {
     //if(low_batt)  {
       //tone(7,440,500); 
     //}
+    
+    digitalWrite(Lights_Pin, on);  
     
     t = millis();
   }

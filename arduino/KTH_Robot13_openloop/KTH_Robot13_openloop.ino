@@ -78,9 +78,11 @@ int encoder1, encoder1_old ;
 int encoder1_loc,encoder2_loc ;
 int encoder2, encoder2_old ;
 
+boolean on = false;
+
 float W1_cons = 0;
 float W2_cons = 0;
-int K_W = 20;
+int K_W = 15;
 
 unsigned long time,time_old;
 unsigned long t_enc, t_enc_old;
@@ -122,8 +124,8 @@ void messagePWM( const differential_drive::Speed &cmd_msg){
   W1_cons = K_W * cmd_msg.W1;
   W2_cons = K_W * cmd_msg.W2;
   
-  MotorA.Set_speed(50);
-  //MotorB.Set_speed(50);
+  MotorA.Set_speed(-W1_cons);
+  MotorB.Set_speed(W2_cons);
   
   if(cpt<10)  {cpt++;}
   else  {
@@ -136,7 +138,7 @@ void messagePWM( const differential_drive::Speed &cmd_msg){
 }
 
 void messageLights(const differential_drive::Lights &cmd_msg){
-  digitalWrite(Lights_Pin, cmd_msg.on);  
+  on = cmd_msg.on;  
 }
 
 
@@ -282,6 +284,8 @@ void loop()  {
       //tone(7,440,500); 
     }
 
+    digitalWrite(Lights_Pin, on);
+    
     t = millis();
 
   }
