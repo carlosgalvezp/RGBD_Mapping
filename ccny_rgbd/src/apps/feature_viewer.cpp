@@ -90,7 +90,7 @@ void FeatureViewer::initParams()
   if (!nh_private_.getParam ("feature/publish_covariances", publish_covariances_))
     publish_covariances_ = false;
   if (!nh_private_.getParam ("threshold", threshold_))
-    threshold_ = 10;
+    threshold_ = 25;
 }
 
 void FeatureViewer::resetDetector()
