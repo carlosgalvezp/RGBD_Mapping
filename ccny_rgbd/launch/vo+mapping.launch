@@ -8,8 +8,8 @@
   <arg name="calibrate"/>
   #### VISUAL ODOMETRY ####################################
 
-  # ORB, SURF, GTF, STAR
-  <arg name="detector_type" default="GFT"/> 
+  # ORB, SURF, GTF, STAR, FAST
+  <arg name="detector_type" default="FAST"/> 
 
   # ICPProbModel, ICP
   <arg name="reg_type" default="ICPProbModel"/> 

@@ -59,9 +59,9 @@ FeatureViewer::FeatureViewer(
   ImageTransport rgb_it(nh_);
   ImageTransport depth_it(nh_);
 
-  sub_rgb_.subscribe(rgb_it,     "/rgbd/rgb",   queue_size_);
-  sub_depth_.subscribe(depth_it, "/rgbd/depth", queue_size_);
-  sub_info_.subscribe(nh_,       "/rgbd/info",  queue_size_);
+  sub_rgb_.subscribe(rgb_it,     "cam1/rgbd/rgb",   queue_size_);
+  sub_depth_.subscribe(depth_it, "cam1/rgbd/depth", queue_size_);
+  sub_info_.subscribe(nh_,       "cam1/rgbd/info",  queue_size_);
 
   // Synchronize inputs.
   sync_.reset(new RGBDSynchronizer3(
@@ -89,6 +89,8 @@ void FeatureViewer::initParams()
     publish_cloud_ = false;
   if (!nh_private_.getParam ("feature/publish_covariances", publish_covariances_))
     publish_covariances_ = false;
+  if (!nh_private_.getParam ("threshold", threshold_))
+    threshold_ = 10;
 }
 
 void FeatureViewer::resetDetector()
@@ -146,6 +148,11 @@ void FeatureViewer::resetDetector()
       &FeatureViewer::starReconfigCallback, this, _1, _2);
     star_config_server_->setCallback(f);
   }
+  else if (detector_type_ == "FAST")
+  {
+    feature_detector_.reset(new rgbdtools::FastDetector(threshold_));
+  }
+
   else
   {
     ROS_FATAL("%s is not a valid detector type! Using GFT", detector_type_.c_str());

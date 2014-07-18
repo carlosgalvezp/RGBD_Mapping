@@ -39,22 +39,13 @@ include_directories(${G2O_INCLUDE_DIR})
 
 ####################################################
 # Build rgbdtools library.
+file(GLOB_RECURSE DIR_SOURCES "src/*.cpp")
+file(GLOB_RECURSE DIR_HEADERS "include/*.h")
+
 
 add_library (rgbdtools SHARED
-  src/rgbd_frame.cpp
-  src/rgbd_keyframe.cpp
-  src/rgbd_util.cpp
-  src/map_util.cpp
-  src/features/feature_detector.cpp
-  src/features/orb_detector.cpp
-  src/features/surf_detector.cpp
-  src/features/gft_detector.cpp
-  src/features/star_detector.cpp
-  src/registration/motion_estimation.cpp
-  src/registration/motion_estimation_icp_prob_model.cpp
-  src/graph/keyframe_graph_detector.cpp
-  src/graph/keyframe_graph_solver.cpp
-  src/graph/keyframe_graph_solver_g2o.cpp)
+  ${DIR_SOURCES}
+  ${DIR_HEADERS})
 
 target_link_libraries (rgbdtools
   ${Boost_LIBRARIES}

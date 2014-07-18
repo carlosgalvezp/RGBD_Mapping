@@ -62,6 +62,8 @@ class FeatureViewer
     virtual ~FeatureViewer();
 
   private:
+    // **** My params
+    double threshold_;
 
     // **** ROS-related
 

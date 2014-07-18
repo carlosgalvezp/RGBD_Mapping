@@ -275,6 +275,11 @@ void VisualOdometry::resetDetector()
       &VisualOdometry::starReconfigCallback, this, _1, _2);
     star_config_server_->setCallback(f);
   }
+  else if (detector_type_ == "FAST")
+  {
+    ROS_INFO("Creating FAST detector");
+    feature_detector_.reset(new rgbdtools::FastDetector(25));
+  }
   else
   {
     ROS_FATAL("%s is not a valid detector type! Using GFT", detector_type_.c_str());
