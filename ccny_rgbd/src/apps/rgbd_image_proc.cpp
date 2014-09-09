@@ -86,25 +86,6 @@ RGBDImageProc::RGBDImageProc(
   ProcConfigServer::CallbackType f = boost::bind(&RGBDImageProc::reconfigCallback, this, _1, _2);
   config_server_.setCallback(f);
 
-  //******************
-  bool calibrate = false;
-  nh_private_.getParam("calibrate", calibrate);
-  if (calibrate){
-      ROS_INFO("CALIBRATING...");
-//    GetRelativePoseCameras();
-//    MergeMaps();
-      sub_rgb_.subscribe  (rgb_image_transport_,
-        "/"+cam_name_+"/camera/rgb/imageDecompressed", queue_size_);
-      sub_depth_.subscribe(depth_image_transport_,
-        "/"+cam_name_+"/camera/rgb/image", queue_size_); //16UC1
-
-      sync2_.reset(new RGBDSynchronizer2(
-                    RGBDSyncPolicy2(queue_size_), sub_rgb_, sub_depth_));
-
-      sync2_->registerCallback(boost::bind(&RGBDImageProc::CompressionTestCallback, this, _1, _2));
-    return;
-  }
-//  //******************
   sub_rgb_.subscribe  (rgb_image_transport_,
     "/"+cam_name_+"/camera/rgb/image", queue_size_);
   sub_depth_.subscribe(depth_image_transport_,
@@ -722,9 +703,9 @@ void RGBDImageProc::RGBDCallback(
       rotateImage(depth_img, 180., depth_img);
   }
 
-  cv::imshow("RGB_" + cam_name_, rgb_img);
+//  cv::imshow("RGB_" + cam_name_, rgb_img);
 //  cv::imshow("Depth", depth_img);
-  cv::waitKey(1);
+//  cv::waitKey(1);
   
 
 

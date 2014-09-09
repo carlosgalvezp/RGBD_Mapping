@@ -49,6 +49,10 @@ MotionEstimationICPProbModel::MotionEstimationICPProbModel():
 
   f2b_.setIdentity(); 
   I_.setIdentity();
+
+  // RANSAC filtering
+  RANSAC_filtering_ = false;
+
 }
 
 MotionEstimationICPProbModel::~MotionEstimationICPProbModel()
@@ -84,9 +88,50 @@ void MotionEstimationICPProbModel::addToModel(
     means_.at(model_idx_) = data_mean;
     model_ptr_->at(model_idx_) = data_point;
   }
+  model_idx_++;
+}
+
+void MotionEstimationICPProbModel::addToModelDescriptor(
+  const Vector3f& data_mean,
+  const Matrix3f& data_cov,
+  const cv::Mat&  data_desc)
+{
+  // **** create a PCL point
+
+  PointFeature data_point;
+  data_point.x = data_mean(0,0);
+  data_point.y = data_mean(1,0);
+  data_point.z = data_mean(2,0);
+
+  if (model_size_ < max_model_size_)
+  {
+    covariances_.push_back(data_cov);
+    means_.push_back(data_mean);
+    model_ptr_->push_back(data_point);
+
+    model_descriptors.push_back(data_desc.clone()); ///@todo Do I need clone()?
+    model_size_++;
+
+    blabla.push_back(1);
+  }
+  else // model_size_ == max_model_size_
+  {
+    if (model_idx_ == max_model_size_)
+      model_idx_ = 0;
+
+    covariances_.at(model_idx_) = data_cov;
+    means_.at(model_idx_) = data_mean;
+    model_ptr_->at(model_idx_) = data_point;
+
+    blabla.at(model_idx_) = 1;
+    // Descriptor
+    cv::Mat tmp = model_descriptors.row(model_idx_);
+    data_desc.copyTo(tmp);
+  }
 
   model_idx_++;
 }
+
 
 bool MotionEstimationICPProbModel::getMotionEstimationImpl(
   RGBDFrame& frame,
@@ -142,9 +187,96 @@ bool MotionEstimationICPProbModel::getMotionEstimationImpl(
   // Stamp of the point cloud, in usec.
   model_ptr_->header.stamp = frame.header.stamp.sec * 1e6 +
       frame.header.stamp.nsec * 1e-3;
-  
   return result;
 }
+
+bool MotionEstimationICPProbModel::getMotionEstimationImplDescriptor(
+  RGBDFrame& frame,
+  const AffineTransform& prediction,
+  AffineTransform& motion)
+{
+  std::cout<<"Get motion estimation Descriptor...\n";
+  /// @todo: currently ignores prediction
+
+  bool result;
+  Vector3fVector data_means;
+  Matrix3fVector data_covariances;
+  cv::Mat        data_descriptors;
+
+  // remove nans from distributinos
+  removeInvalidDistributionsDescriptor(
+    frame.kp_means, frame.kp_covariances, frame.descriptors, frame.kp_valid,
+    data_means, data_covariances, data_descriptors);
+
+
+  // transform distributions to world frame
+  transformDistributions(data_means, data_covariances, f2b_ * b2c_);
+
+  // **** perform registration
+
+  if (model_size_ == 0)
+  {
+    std::cout << "No points in model: initializing from features." << std::endl;
+    motion.setIdentity();
+    initializeModelFromDataDescriptor(data_means, data_covariances, data_descriptors);
+    result = true;
+  }
+  else
+  {
+    // align using icp
+    result = alignICPEuclideanDescriptor(data_means, data_descriptors, motion);
+
+    if (!result) return false;
+
+    constrainMotion(motion);
+    f2b_ = motion * f2b_;
+
+    // transform distributions to world frame
+    transformDistributions(data_means, data_covariances, motion);
+
+    // update model: inserts new features and updates old ones with KF
+    updateModelFromDataDescriptor(data_means, data_covariances, data_descriptors);
+  }
+  // update the model tree
+  model_tree_.setInputCloud(model_ptr_);
+  // update model metadata
+  model_ptr_->width = model_ptr_->points.size();
+  // Stamp of the point cloud, in usec.
+  model_ptr_->header.stamp = frame.header.stamp.sec * 1e6 +
+      frame.header.stamp.nsec * 1e-3;
+
+  //Display  X covariances
+  float minCov = 1000.0, maxCov = 0;
+  int minIdx= -1, maxIdx = -1;
+  for(unsigned int i=0; i < covariances_.size(); i++)
+  {
+    Matrix3f& c = covariances_[i];
+    if (c(0,0) < minCov)
+    {
+        minCov = c(0,0);
+        minIdx = i;
+    }
+    if (c(0,0) > maxCov)
+    {
+        maxIdx = i;
+        maxCov = c(0,0);
+    }
+  }
+  std::cout<<"Min X covariance ["<<minIdx<<"]: "<<minCov<<
+            " Max X covariance ["<<maxIdx<<"]: "<<maxCov<<"\n";
+
+  // Display updates
+  std::cout<<"Number of Points Updates: "<<blabla.size()<<"\n";
+  double n1=0.0;
+  for(unsigned int i=0;i<blabla.size();i++){
+   if(blabla.at(i) == 1 && i < 100)
+       n1++;
+  }
+  std::cout<<"\n";
+  std::cout<<"Percentage of 1: "<<n1<<" \n";
+  return result;
+}
+
 
 bool MotionEstimationICPProbModel::alignICPEuclidean(
   const Vector3fVector& data_means,
@@ -166,13 +298,17 @@ bool MotionEstimationICPProbModel::alignICPEuclidean(
     IntVector data_indices, model_indices;
     getCorrespEuclidean(data_cloud, data_indices, model_indices);
    
+    // Optionally, filter correspondences using RANSAC
+    if (RANSAC_filtering_)
+        filterCorrespondences(data_cloud, data_indices, model_indices);
+
     if ((int)data_indices.size() <  min_correspondences_)
     {
       std::cerr << "[ICP] Not enough correspondences ("
                 << (int)data_indices.size() 
                 << " of "
                 << min_correspondences_ 
-                << " minimum). Leacing ICP loop"
+                << " minimum). Leaving ICP loop"
                 << std::endl;
       return false;
     }
@@ -208,6 +344,133 @@ bool MotionEstimationICPProbModel::alignICPEuclidean(
   return true;
 }
 
+void MotionEstimationICPProbModel::filterCorrespondences(
+        const PointCloudFeature& data_cloud,
+        IntVector& data_indices,
+        IntVector& model_indices)
+{
+    struct timeval t1, t2;
+    gettimeofday(&t1, NULL);
+
+    // **** Prepare source and target point clouds, and original correspondences
+    pcl::PointCloud<pcl::PointXYZ>::Ptr model_points (new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr data_points (new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::CorrespondencesPtr original_correspondences (new pcl::Correspondences);
+
+    for(unsigned int i = 0; i < model_indices.size(); i++)
+    {
+        model_points->push_back(model_ptr_->at(model_indices[i]));
+        data_points->push_back(data_cloud[i]);
+
+        pcl::Correspondence corr;
+        corr.index_query = i;
+        corr.index_match = i;
+        original_correspondences->push_back(corr);
+    }
+
+    // **** Filter using RANSAC
+    pcl::Correspondences correspondences;
+    pcl::registration::CorrespondenceRejectorSampleConsensus<pcl::PointXYZ> rejector;
+
+    rejector.setInputSource(model_points);
+    rejector.setInputTarget(data_points);
+    rejector.setInlierThreshold(0.005);
+    rejector.setMaximumIterations(1000000);
+    rejector.setInputCorrespondences(original_correspondences);
+    rejector.getCorrespondences(correspondences);
+
+    std::cout<<"Input correspondances: "<<data_indices.size()<<
+               " Output correspondances: "<<correspondences.size()<<"\n";
+
+    // **** Translate the result into the data_indices and model_indices vectors
+    // Make copy of model_indices
+    IntVector model_indices_copy (model_indices);
+    data_indices.clear();
+    model_indices.clear();
+
+    for(unsigned int i = 0; i < correspondences.size(); i++)
+    {
+        pcl::Correspondence corr = correspondences.at(i);
+        model_indices.push_back(model_indices_copy[corr.index_query]); // Query = source
+        data_indices.push_back(corr.index_match);                      // Match = target
+    }
+
+    gettimeofday(&t2, NULL);
+    std::cout<<"RANSAC: "<<(t2.tv_sec  - t1.tv_sec )*1000.0 +
+                           (t2.tv_usec - t1.tv_usec)/1000.0 << " ms\n";
+
+}
+
+bool MotionEstimationICPProbModel::alignICPEuclideanDescriptor(
+  const Vector3fVector& data_means,
+  const cv::Mat&        data_descriptors,
+  AffineTransform& correction)
+{
+  TransformationEstimationSVD svd;
+
+  // create a point cloud from the means
+  PointCloudFeature data_cloud;
+  pointCloudFromMeans(data_means, data_cloud);
+
+  // initialize the result transform
+  AffineTransform final_transformation;
+  final_transformation.setIdentity();
+
+  for (int iteration = 0; iteration < max_iterations_; ++iteration)
+  {
+    // get corespondences
+    IntVector data_indices, model_indices;
+    getCorrespEuclideanDescriptor(data_descriptors,
+                                  data_indices, model_indices);
+
+    // Optionally, filter correspondences using RANSAC
+    RANSAC_filtering_ = false;
+    if (RANSAC_filtering_)
+        filterCorrespondences(data_cloud, data_indices, model_indices);
+
+    if ((int)data_indices.size() <  min_correspondences_)
+    {
+      std::cerr << "[ICP] Not enough correspondences ("
+                << (int)data_indices.size()
+                << " of "
+                << min_correspondences_
+                << " minimum). Leacing ICP loop"
+                << std::endl;
+      return false;
+    }
+
+    // estimae transformation
+    Eigen::Matrix4f transform_eigen;
+    svd.estimateRigidTransformation (data_cloud, data_indices,
+                                     *model_ptr_, model_indices,
+                                     transform_eigen);
+
+
+    AffineTransform transformation(transform_eigen);
+
+    // rotate
+    pcl::transformPointCloud(data_cloud, data_cloud, transformation);
+
+    // accumulate incremental tf
+    final_transformation = transformation * final_transformation;
+
+    // check for convergence
+    double linear, angular;
+    getTfDifference(transformation, linear, angular);
+    if (linear  < tf_epsilon_linear_ &&
+        angular < tf_epsilon_angular_)
+    {
+      //printf("(%f %f) conv. at [%d] leaving loop\n",
+      //  linear*1000.0, angular*10.0*180.0/3.14, iteration);
+      break;
+    }
+  }
+
+  correction = final_transformation;
+  return true;
+}
+
+
 void MotionEstimationICPProbModel::getCorrespEuclidean(
   const PointCloudFeature& data_cloud,
   IntVector& data_indices,
@@ -228,6 +491,40 @@ void MotionEstimationICPProbModel::getCorrespEuclidean(
       model_indices.push_back(eucl_nn_idx);
     }
   }  
+}
+
+void MotionEstimationICPProbModel::getCorrespEuclideanDescriptor(
+  const cv::Mat&           data_descriptors,
+  IntVector& data_indices,
+  IntVector& model_indices)
+{
+  std::cout<<"Get corresp euclidean...\n";
+  // **** Match descriptors
+  cv::FlannBasedMatcher feature_matcher; /// FLANN feature matcher
+  std::vector<cv::DMatch> matches;
+  feature_matcher.match(data_descriptors, model_descriptors, matches);
+
+  // **** Filter matchings
+  // Compute max and min distance
+  double min_dist = 100000, max_dist = 0;
+  for( int i = 0; i < matches.size(); i++ )
+  {
+     double dist = matches[i].distance;
+     if( dist < min_dist && dist != 0 ) min_dist = dist;
+     if( dist > max_dist ) max_dist = dist;
+  }
+
+  // *** Select good matchings and fill in data and model indices
+
+  for( int i = 0; i < matches.size(); i++ )
+  {
+      if(matches[i].distance < 2 * min_dist)
+      {
+          cv::DMatch match = matches[i];
+          data_indices.push_back(match.queryIdx);
+          model_indices.push_back(match.trainIdx);
+      }
+  }
 }
 
 bool MotionEstimationICPProbModel::getNNEuclidean(
@@ -251,6 +548,7 @@ bool MotionEstimationICPProbModel::getNNEuclidean(
   }
   else return false;
 }
+
 
 bool MotionEstimationICPProbModel::getNNMahalanobis(
   const Vector3f& data_mean, const Matrix3f& data_cov,
@@ -313,6 +611,22 @@ void MotionEstimationICPProbModel::initializeModelFromData(
   }
 }
 
+void MotionEstimationICPProbModel::initializeModelFromDataDescriptor(
+  const Vector3fVector& data_means,
+  const Matrix3fVector& data_covariances,
+  const cv::Mat& data_descriptors)
+{
+  for (unsigned int idx = 0; idx < data_means.size(); ++idx)
+  {
+    const Vector3f& mean = data_means[idx];
+    const Matrix3f& cov  = data_covariances[idx];
+    addToModel(mean, cov);
+    blabla.push_back(1);
+  }
+  // Add model descriptors
+  model_descriptors = data_descriptors.clone();
+}
+
 void MotionEstimationICPProbModel::updateModelFromData(
   const Vector3fVector& data_means,
   const Matrix3fVector& data_covariances)
@@ -367,6 +681,69 @@ void MotionEstimationICPProbModel::updateModelFromData(
     else
     {
       addToModel(data_mean, data_cov);
+    }
+  }
+}
+
+void MotionEstimationICPProbModel::updateModelFromDataDescriptor(
+  const Vector3fVector& data_means,
+  const Matrix3fVector& data_covariances,
+  const cv::Mat& data_descriptors)
+{
+  // pre-allocate search vectors
+  IntVector indices;
+  FloatVector dists_sq;
+  indices.resize(n_nearest_neighbors_);
+  dists_sq.resize(n_nearest_neighbors_);
+
+  for (unsigned int idx = 0; idx < data_means.size(); ++idx)
+  {
+    const Vector3f& data_mean = data_means[idx];
+    const Matrix3f& data_cov  = data_covariances[idx];
+    const cv::Mat   data_desc = data_descriptors.row(idx);
+
+    // find nearest neighbor in model
+    double mah_dist_sq;
+    int mah_nn_idx;
+    bool nn_result = getNNMahalanobis(
+      data_mean, data_cov, mah_nn_idx, mah_dist_sq, indices, dists_sq);
+
+    if (nn_result && mah_dist_sq < max_assoc_dist_mah_sq_)
+    {
+      // **** KF update *********************************
+
+      // predicted state
+      const Vector3f& model_mean_pred = means_[mah_nn_idx];
+      const Matrix3f& model_cov_pred  = covariances_[mah_nn_idx];
+
+      // calculate measurement and cov residual
+      Vector3f y = data_mean - model_mean_pred;
+      Matrix3f S = data_cov + model_cov_pred;
+
+      // calculate Kalman gain
+      Matrix3f K = model_cov_pred * S.inverse();
+
+      // updated state estimate (mean and cov)
+      Vector3f model_mean_upd = model_mean_pred + K * y;
+      Matrix3f model_cov_upd  = (I_ - K) * model_cov_pred;
+
+      // update in model
+      means_[mah_nn_idx] = model_mean_upd;
+      covariances_[mah_nn_idx] = model_cov_upd;
+
+      PointFeature updated_point;
+      updated_point.x = model_mean_upd(0,0);
+      updated_point.y = model_mean_upd(1,0);
+      updated_point.z = model_mean_upd(2,0);
+
+      model_ptr_->points[mah_nn_idx] = updated_point;
+      ///@todo Update also descriptor?
+
+      blabla.at(mah_nn_idx) = blabla.at(mah_nn_idx)+1;
+    }
+    else
+    {
+      addToModelDescriptor(data_mean, data_cov, data_desc);
     }
   }
 }

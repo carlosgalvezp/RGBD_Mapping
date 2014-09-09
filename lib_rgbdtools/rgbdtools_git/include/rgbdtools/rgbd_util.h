@@ -78,6 +78,15 @@ void removeInvalidDistributions(
   Vector3fVector& means_f,
   Matrix3fVector& covariances_f);
 
+void removeInvalidDistributionsDescriptor(
+  const Vector3fVector& means,
+  const Matrix3fVector& covariances,
+  const cv::Mat& descriptors,
+  const BoolVector& valid,
+  Vector3fVector& means_f,
+  Matrix3fVector& covariances_f,
+  cv::Mat& descriptors_f);
+
 /** @brief Transforms a vector of means
  * 
  * @param means vector of 3x1 matrices of positions (3D means)
@@ -211,6 +220,12 @@ void unwarpDepthImage(
 void setRPY(
   float roll, float pitch, float yaw, 
   Matrix3f& m);
+
+// ****************************************************************************
+// ****************************************************************************
+void reduceKeypoints(std::vector<cv::KeyPoint> &input,
+                     int max_keypoints,
+                     std::vector<cv::KeyPoint> &output);
 
 } // namespace rgbdtools
 

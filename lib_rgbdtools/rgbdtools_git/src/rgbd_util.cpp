@@ -62,6 +62,33 @@ void removeInvalidDistributions(
   }
 }
 
+void removeInvalidDistributionsDescriptor(
+  const Vector3fVector& means,
+  const Matrix3fVector& covariances,
+  const cv::Mat& descriptors,
+  const BoolVector& valid,
+  Vector3fVector& means_f,
+  Matrix3fVector& covariances_f,
+  cv::Mat& descriptors_f)
+{
+  unsigned int size = valid.size();
+
+  descriptors_f = cv::Mat(0, descriptors.cols, descriptors.type());
+
+  for(unsigned int i = 0; i < size; ++i)
+  {
+    if (valid[i])
+    {
+      const Vector3f& mean = means[i];
+      const Matrix3f& cov  = covariances[i];
+
+      means_f.push_back(mean);
+      covariances_f.push_back(cov);
+      descriptors_f.push_back(descriptors.row(i));
+    }
+  }
+}
+
 void pointCloudFromMeans(
   const Vector3fVector& means,
   PointCloudFeature& cloud)
@@ -449,4 +476,24 @@ void setRPY(
       Eigen::AngleAxisf(yaw,   Eigen::Vector3f::UnitZ());
 }
  
+
+// *************************************************************
+// *************************************************************
+void reduceKeypoints(std::vector<cv::KeyPoint> &input,
+                     int max_keypoints,
+                     std::vector<cv::KeyPoint> &output)
+{
+    assert(input.size() > max_keypoints);
+    int n = input.size();
+
+    // Swap randomly
+    for (int i = 0; i < max_keypoints; i++)
+        std::swap(input[i],input[i+std::rand()%(n-i)]);
+
+    // Cut
+    std::vector<cv::KeyPoint>::const_iterator first = input.begin() ;
+    std::vector<cv::KeyPoint>::const_iterator last = input.begin() + max_keypoints;
+    std::vector<cv::KeyPoint> newVec(first, last);
+    output = newVec;
+}
 } // namespace rgbdtools

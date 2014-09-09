@@ -719,6 +719,7 @@ bool KeyframeMapper::saveOctomap(const std::string& path)
 
   if (octomap_with_color_)
   {
+    ROS_WARN("Building color octomap with resolution: %.3f",octomap_res_);
     octomap::ColorOcTree tree(octomap_res_);   
     buildColorOctomap(tree);
     result = tree.write(path);
@@ -758,7 +759,8 @@ void KeyframeMapper::buildOctomap(octomap::OcTree& tree)
         octomap_cloud.push_back(p.x, p.y, p.z);
     }
     
-    tree.insertScan(octomap_cloud, sensor_origin, frame_origin);
+//    tree.insertScan(octomap_cloud, sensor_origin, frame_origin);
+    tree.insertPointCloud(octomap_cloud, sensor_origin, frame_origin);
   }
 }
 
@@ -775,9 +777,11 @@ void KeyframeMapper::buildColorOctomap(octomap::ColorOcTree& tree)
        
     // construct the cloud
     PointCloudT::Ptr cloud_unf(new PointCloudT());
+    std::cout<<"Constructing dense cloud...\n";
     keyframe.constructDensePointCloud(*cloud_unf, max_range_, max_stdev_);
   
     // perform filtering for max z
+    std::cout<<"Filtering in z...\n";
     pcl::transformPointCloud(*cloud_unf, *cloud_unf, keyframe.pose);
     PointCloudT cloud;
     pcl::PassThrough<PointT> pass;
@@ -789,6 +793,7 @@ void KeyframeMapper::buildColorOctomap(octomap::ColorOcTree& tree)
     
     octomap::pose6d frame_origin = poseTfToOctomap(tfFromEigenAffine(keyframe.pose));
     
+    std::cout<<"Building octomap...\n";
     // build octomap cloud from pcl cloud
     octomap::Pointcloud octomap_cloud;
     for (unsigned int pt_idx = 0; pt_idx < cloud.points.size(); ++pt_idx)
@@ -797,11 +802,14 @@ void KeyframeMapper::buildColorOctomap(octomap::ColorOcTree& tree)
       if (!std::isnan(p.z))
         octomap_cloud.push_back(p.x, p.y, p.z);
     }
-    
+
+    std::cout<<"Inserting scan...\n";
     // insert scan (only xyz considered, no colors)
-    tree.insertScan(octomap_cloud, sensor_origin, frame_origin);
-    
+//    tree.insertScan(octomap_cloud, sensor_origin, frame_origin); //DEPRECATED
+    tree.insertPointCloud(octomap_cloud, sensor_origin, frame_origin);
+
     // insert colors
+    std::cout<<"Inserting colors...\n";
     PointCloudT cloud_tf;
     pcl::transformPointCloud(cloud, cloud_tf, keyframe.pose);
     for (unsigned int pt_idx = 0; pt_idx < cloud_tf.points.size(); ++pt_idx)
@@ -814,7 +822,7 @@ void KeyframeMapper::buildColorOctomap(octomap::ColorOcTree& tree)
         if (n) n->setColor(p.r, p.g, p.b); 
       }
     }
-    
+    std::cout<<"Updating inner occupancy...\n";
     tree.updateInnerOccupancy();
   }
 }

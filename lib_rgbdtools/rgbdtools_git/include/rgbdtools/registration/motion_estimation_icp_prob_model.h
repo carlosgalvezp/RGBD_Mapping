@@ -27,9 +27,13 @@
 #include <pcl/io/pcd_io.h>
 #include <pcl/kdtree/kdtree.h>
 #include <pcl/registration/transformation_estimation_svd.h>
+#include <pcl/registration/correspondence_rejection_sample_consensus.h>
+#include <pcl/correspondence.h>
 
 #include "rgbdtools/types.h"
 #include "rgbdtools/registration/motion_estimation.h"
+
+
 
 namespace rgbdtools {
 
@@ -63,6 +67,11 @@ class MotionEstimationICPProbModel: public MotionEstimation
      * @retval false the motion estimation failed
      */
     bool getMotionEstimationImpl(
+      RGBDFrame& frame,
+      const AffineTransform& prediction,
+      AffineTransform& motion);
+
+    bool getMotionEstimationImplDescriptor(
       RGBDFrame& frame,
       const AffineTransform& prediction,
       AffineTransform& motion);
@@ -128,17 +137,22 @@ class MotionEstimationICPProbModel: public MotionEstimation
     // **** variables
 
     PointCloudFeature::Ptr model_ptr_; ///< The model point cloud
+
+    cv::Mat model_descriptors; ///< Model point descriptors
+
     int model_idx_;         ///< Current intex in the ring buffer
     int model_size_;        ///< Current model size
     Vector3fVector means_;  ///< Vector of model feature mean
     Matrix3fVector covariances_; ///< Vector of model feature covariances
 
     KdTree model_tree_;     ///< Kdtree of model_ptr_
-
     Matrix3f I_;            ///< 3x3 Identity matrix
     
     AffineTransform f2b_; ///< Transform from fixed to moving frame
     
+    std::vector<int> model_updates_;
+    std::vector<int> blabla;
+
     // ***** funtions
   
     /** @brief Performs ICP alignment using the Euclidean distance for corresopndences
@@ -151,6 +165,11 @@ class MotionEstimationICPProbModel: public MotionEstimation
       const Vector3fVector& data_means,
       AffineTransform& correction);
 
+    bool alignICPEuclideanDescriptor(
+      const Vector3fVector& data_means,
+      const cv::Mat&        data_descriptors,
+      AffineTransform& correction);
+
     /** @brief Performs ICP alignment using the Euclidean distance for corresopndences
      * @param data_cloud a pointcloud of the 3D positions of the features
      * @param data_indices reference to a vector containting the resulting data indices
@@ -161,6 +180,10 @@ class MotionEstimationICPProbModel: public MotionEstimation
       IntVector& data_indices,
       IntVector& model_indices); 
  
+    void getCorrespEuclideanDescriptor(const cv::Mat&           data_descriptors,
+      IntVector& data_indices,
+      IntVector& model_indices);
+
     /** @brief Finds the nearest Euclidean neighbor
      * @param data_point the query 3D data point
      * @param eucl_nn_idx reference to the resulting nearest neigbor index in the model
@@ -171,6 +194,7 @@ class MotionEstimationICPProbModel: public MotionEstimation
     bool getNNEuclidean(
       const PointFeature& data_point,
       int& eucl_nn_idx, double& eucl_dist_sq);
+
 
     /** @brief Finds the nearest Mahalanobis neighbor
      * 
@@ -200,6 +224,11 @@ class MotionEstimationICPProbModel: public MotionEstimation
     void initializeModelFromData(
       const Vector3fVector& data_means,
       const Matrix3fVector& data_covariances);
+
+    void initializeModelFromDataDescriptor(
+      const Vector3fVector& data_means,
+      const Matrix3fVector& data_covariances,
+      const cv::Mat& data_descriptors);
     
     /** @brief Updates the (non-empty) model from a set of data means and
      * covariances
@@ -215,6 +244,10 @@ class MotionEstimationICPProbModel: public MotionEstimation
      */
     void updateModelFromData(const Vector3fVector& data_means,
                              const Matrix3fVector& data_covariances);
+
+    void updateModelFromDataDescriptor(const Vector3fVector& data_means,
+                                       const Matrix3fVector& data_covariances,
+                                       const cv::Mat&        data_descriptors);
   
     /** @brief Adds a new point to the model
      * 
@@ -229,7 +262,17 @@ class MotionEstimationICPProbModel: public MotionEstimation
       const Vector3f& data_mean,
       const Matrix3f& data_cov);
 
+    void addToModelDescriptor(
+      const Vector3f& data_mean,
+      const Matrix3f& data_cov,
+      const cv::Mat&  data_desc);
+
     bool saveModel(const std::string& filename);
+
+    void filterCorrespondences(
+            const PointCloudFeature& data_cloud,
+            IntVector& data_indices,
+            IntVector& model_indices);
 };
 
 } // namespace rgbdtools

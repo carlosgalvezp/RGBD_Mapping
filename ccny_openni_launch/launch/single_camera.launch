@@ -3,7 +3,7 @@
 
 <arg name="cam_id" default="1" />
 <arg name="calibrate" default="false"/>
-<arg name="map_resolution" default="0.01"/>
+<arg name="map_resolution" default="0.001"/>
 <arg name="record_only" default="false"/>
 <arg name="offline" default="false"/>
 

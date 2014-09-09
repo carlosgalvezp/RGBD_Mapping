@@ -45,13 +45,13 @@ void FeatureDetector::findFeatures(RGBDFrame& frame)
   cv::Mat gray_img(input_img.rows, input_img.cols, CV_8UC1);
   const cv::Mat* ptarget_img = NULL;
 
-  if (input_img.type() != CV_8UC1)
-  {
-    // convert from RGB to grayscale only if necessary
-    cvtColor(input_img, gray_img, CV_BGR2GRAY);
-    ptarget_img = &gray_img;
-  }
-  else
+//  if (input_img.type() != CV_8UC1)
+//  {
+//    // convert from RGB to grayscale only if necessary
+//    cvtColor(input_img, gray_img, CV_BGR2GRAY);
+//    ptarget_img = &gray_img;
+//  }
+//  else
     ptarget_img = &input_img;
 
   // blur if needed

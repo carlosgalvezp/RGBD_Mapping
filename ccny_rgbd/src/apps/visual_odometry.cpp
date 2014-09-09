@@ -218,6 +218,7 @@ void VisualOdometry::configureMotionEstimation()
   motion_estimation_.setMaxCorrespondenceDistEuclidean(max_corresp_dist_eucl);
   motion_estimation_.setMaxAssociationDistMahalanobis(max_assoc_dist_mah);
   motion_estimation_.setNNearestNeighbors(n_nearest_neighbors);
+  motion_estimation_.use_Descriptors_ = false;
 }
 
 void VisualOdometry::resetDetector()
@@ -257,11 +258,14 @@ void VisualOdometry::resetDetector()
     feature_detector_.reset(new rgbdtools::GftDetector());
     gft_config_server_.reset(new 
       GftDetectorConfigServer(ros::NodeHandle(nh_private_, "feature/GFT")));
-    
+
     // dynamic reconfigure
     GftDetectorConfigServer::CallbackType f = boost::bind(
       &VisualOdometry::gftReconfigCallback, this, _1, _2);
     gft_config_server_->setCallback(f);
+
+    feature_detector_->compute_descriptors_ = true;
+    motion_estimation_.use_Descriptors_ = true;
   }
   else if (detector_type_ == "STAR")
   {
@@ -278,7 +282,13 @@ void VisualOdometry::resetDetector()
   else if (detector_type_ == "FAST")
   {
     ROS_INFO("Creating FAST detector");
-    feature_detector_.reset(new rgbdtools::FastDetector(25));
+    double fast_threshold;
+    int fast_n_features;
+    nh_private_.getParam ("FAST/threshold", fast_threshold);
+    nh_private_.getParam ("FAST/n_features", fast_n_features);
+
+    feature_detector_.reset(new rgbdtools::FastDetector(fast_n_features,fast_threshold));
+    motion_estimation_.use_Descriptors_ = true;
   }
   else
   {
@@ -299,6 +309,7 @@ void VisualOdometry::RGBDCallback(
   const ImageMsg::ConstPtr& depth_msg,
   const CameraInfoMsg::ConstPtr& info_msg)
 {
+  std::cout<<"Visual Odometry callback\n";
   ros::WallTime start = ros::WallTime::now();
 
   // **** initialize ***************************************************

@@ -9,7 +9,7 @@
   #### VISUAL ODOMETRY ####################################
 
   # ORB, SURF, GTF, STAR, FAST
-  <arg name="detector_type" default="FAST"/> 
+  <arg name="detector_type" default="GFT"/> 
 
   # ICPProbModel, ICP
   <arg name="reg_type" default="ICPProbModel"/> 
@@ -41,6 +41,7 @@
     <param name="kf_dist_eps"  value="0.25"/> <!-- 25 cm -->
     <param name="kf_angle_eps" value="0.35"/> <!-- 20 deg -->
     <param name="pcd_map_res" value="$(arg map_resolution)"/>
+    <param name="octomap_res" value="0.001"/>    
     <param name="max_range" value="7.0"/>
     <param name="max_stdev" value="0.05"/>
 

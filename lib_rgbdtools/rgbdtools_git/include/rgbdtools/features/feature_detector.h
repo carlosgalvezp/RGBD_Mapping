@@ -37,6 +37,7 @@ namespace rgbdtools {
 class FeatureDetector
 { 
   public:
+    bool compute_descriptors_;   ///< whether to calculate feature descriptors
 
     /** @brief Default constructor
      */    
@@ -98,7 +99,6 @@ class FeatureDetector
 
     boost::mutex mutex_;         ///< state mutex
     
-    bool compute_descriptors_;   ///< whether to calculate feature descriptors
     
     /** @brief Implementation of the feature detector.
      * @param frame the input frame

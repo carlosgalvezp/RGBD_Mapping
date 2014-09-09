@@ -38,7 +38,7 @@ MotionEstimation::~MotionEstimation()
 AffineTransform MotionEstimation::getMotionEstimation(RGBDFrame& frame)
 {
   ///@todo this should return a covariance
-  
+  use_Descriptors_ = true;
   // motion prediction 
   /// @todo motion prediction disabled for now
   AffineTransform prediction;
@@ -54,7 +54,11 @@ AffineTransform MotionEstimation::getMotionEstimation(RGBDFrame& frame)
   }
   else
   {
-    result = getMotionEstimationImpl(frame, prediction, motion);
+      use_Descriptors_ = false;
+      if(use_Descriptors_)
+          result = getMotionEstimationImplDescriptor(frame, prediction, motion);
+      else
+          result = getMotionEstimationImpl(frame, prediction, motion);
   }
 
   if (!result)
@@ -63,7 +67,6 @@ AffineTransform MotionEstimation::getMotionEstimation(RGBDFrame& frame)
               << std::endl;
     motion.setIdentity();
   }
-
   return motion;
 }
 

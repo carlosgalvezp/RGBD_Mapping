@@ -26,6 +26,7 @@
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/features2d/features2d.hpp>
+#include <opencv2/nonfree/features2d.hpp>
 
 #include "rgbdtools/features/feature_detector.h"
 
@@ -68,6 +69,7 @@ class GftDetector: public FeatureDetector
     double min_distance_; ///< the minimum distance (in pixels) between the features
 
     boost::shared_ptr<cv::GoodFeaturesToTrackDetector> gft_detector_; ///< OpenCV GTF detector object   
+    cv::SiftDescriptorExtractor sift_descriptor_; ///< OpenCV SIFT descriptor extractor object
 };
 
 typedef boost::shared_ptr<GftDetector> GftDetectorPtr;

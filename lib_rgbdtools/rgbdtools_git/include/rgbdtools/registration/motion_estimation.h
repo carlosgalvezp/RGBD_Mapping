@@ -39,9 +39,9 @@ namespace rgbdtools {
 class MotionEstimation
 {
   public:
-
+    bool use_Descriptors_;
     enum MotionConstraint {NONE = 0, ROLL_PITCH = 1, ROLL_PITCH_Z = 2};
-    
+
     /** @brief Constructor from ROS nodehandles
      * @param nh the public nodehandle
      * @param nh_private the private nodehandle
@@ -85,6 +85,8 @@ class MotionEstimation
 
     int motion_constraint_;   ///< The motion constraint type
 
+    bool RANSAC_filtering_; ///< Filter correspondances using RANSAC
+
     /** @brief Implementation of the motion estimation algorithm.
      * @param frame the current RGBD frame
      * @param prediction the motion prediction (currently ignored)
@@ -93,6 +95,11 @@ class MotionEstimation
      * @retval false the motion estimation failed
      */
     virtual bool getMotionEstimationImpl(
+      RGBDFrame& frame,
+      const AffineTransform& prediction,
+      AffineTransform& motion) = 0;
+
+    virtual bool getMotionEstimationImplDescriptor(
       RGBDFrame& frame,
       const AffineTransform& prediction,
       AffineTransform& motion) = 0;

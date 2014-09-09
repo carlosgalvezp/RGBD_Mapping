@@ -3,6 +3,8 @@
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/features2d/features2d.hpp>
+#include <opencv2/nonfree/features2d.hpp>
+
 
 #include "rgbdtools/features/feature_detector.h"
 
@@ -18,7 +20,8 @@ public:
     /**
      * @brief Default constructor
      */
-    FastDetector(double threshold=10);
+    FastDetector(int n_features= 200,
+                 double threshold = 10);
 
     /**
      * @brief Default destructor
@@ -41,7 +44,10 @@ public:
 private:
 
     double threshold_; // Threshold for the detector
+    int n_features_; // Number of features to extract
+
     boost::shared_ptr<cv::FastFeatureDetector> fast_detector_; ///< OpenCV FAST detector object    
+    cv::SiftDescriptorExtractor sift_descriptor_; ///< OpenCV SIFT descriptor extractor object
 };
 
 typedef boost::shared_ptr<FastDetector> FastDetectorPtr;
